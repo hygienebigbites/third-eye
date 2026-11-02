@@ -121,6 +121,23 @@ tfoot td{font-weight:800;background:#f6f8fb;position:sticky;bottom:0}
 .dvr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
 .dvr{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer;box-shadow:var(--sh);display:flex;flex-direction:column;gap:6px;text-align:left}
 .dvr:hover{border-color:var(--teal2)}
+.dvr .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.btn.okb{background:var(--ok);border-color:var(--ok);color:#fff;min-height:46px;font-size:14.5px}
+.btn.okb:hover{background:#116b33}
+.btn.isb{border-color:#f2a7a7;color:var(--bad);min-height:46px;font-size:14.5px}
+.dvr.saving{border-left:4px solid var(--ok);background:#f4fbf6}
+.undo-bar{height:4px;background:#d6eedd;border-radius:4px;overflow:hidden;margin-top:6px}
+.undo-bar>div{height:100%;background:var(--ok);animation:undo 4s linear forwards}
+@keyframes undo{from{width:100%}to{width:0}}
+.grp{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:6px 0 -2px;font-weight:800;color:var(--ink2);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+.grp:after{content:"";flex:1;height:1px;background:var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chips button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink2)}
+.chips button.on{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
+.banner{display:flex;align-items:center;gap:10px;background:var(--infobg);border:1px solid #c9d8fb;border-radius:10px;padding:10px 12px;margin-top:12px;font-weight:600;color:#1e3a8a}
+.qa{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.qa input{flex:1;min-width:120px;min-height:36px;padding:6px 10px}
+@media(max-width:480px){.kpi .v{font-size:20px}.kpi{padding:10px}.kpis{gap:8px}}
 .dvr .nm{font-weight:700;font-size:15px}
 .dvr.done-ok{border-left:4px solid var(--ok)}.dvr.done-bad{border-left:4px solid var(--bad)}.dvr.done-warn{border-left:4px solid var(--warn)}.dvr.pending{border-left:4px solid #cbd5e1}
 /* ---------- audit form ---------- */
@@ -549,7 +566,7 @@ function viewDashboard() {
    ${k(act.filter(slaBreached).length ? 'bad' : 'ok', 'SLA breached', act.filter(slaBreached).length, 'open beyond allowed hours')}
   </div>
 
-  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise report</h3><span class="small muted">Latest audit per DVR · tap a row to audit</span></div>
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise report</h3><span class="small muted">Latest audit per DVR${canAudit() ? ' · tap a row to audit' : ''}</span></div>
    <div class="tbl-wrap" style="margin-top:8px">${reportTable(r)}</div></div>
 
   <div class="two" style="margin-top:12px">
@@ -566,7 +583,7 @@ function reportTable(r) {
   const body = r.rows.map(({d, a}) => {
     const bad = a && (a['DVR Online'] !== 'Y' || a.Playback === 'Error' || num(a['Cameras Live']) < num(a['Cameras Installed']));
     const issues = a ? [a['DVR Issue'], a['Camera Issues'], a['Playback Issue'] ? 'Playback: ' + a['Playback Issue'] + (a['Playback Cameras'] ? ' (' + (a['Playback Cameras'] === 'ALL' ? 'all cams' : 'cams ' + a['Playback Cameras']) + ')' : '') : ''].filter(Boolean).join(' · ') : '';
-    return `<tr class="${bad ? 'rowbad' : ''}" style="cursor:pointer" data-act="row-audit" data-code="${esc(d['DVR Code'])}">
+    return ` <tr class="${bad ? 'rowbad' : ''}" style="cursor:${canAudit() ? 'pointer' : 'default'}" data-act="row-audit" data-code="${esc(d['DVR Code'])}">
      <td>${esc(d.Type)}</td><td><b>${esc(d['Outlet Name'])}</b></td><td>${esc(d['DVR Code'])}</td><td class="muted">${esc(d['DVR Serial No'])}</td>
      <td><span class="pill sw-${esc(d.Software)}">${esc(d.Software)}</span></td><td>${esc(d.City)}</td>
      <td>${a ? '<span class="pill p-ok">Yes</span>' : '<span class="pill p-mute">Pending</span>'}</td>
@@ -643,32 +660,72 @@ function viewAuditList() {
   const q = f.q.trim().toLowerCase();
   const status = d => { const a = la[d['DVR Code']]; if (!a) return 'pending'; if (a['DVR Online'] !== 'Y' || (a.Playback === 'Error' && a['Playback Cameras'] === 'ALL')) return 'done-bad'; if (num(a['Cameras Live']) < num(a['Cameras Installed']) || a.Playback === 'Error') return 'done-warn'; return 'done-ok'; };
   let list = devs.filter(d => !q || (d['Outlet Name'] + ' ' + d['DVR Code'] + ' ' + d['DVR Serial No']).toLowerCase().includes(q));
-  if (f.filter === 'Pending') list = list.filter(d => !la[d['DVR Code']]);
+  if (f.filter === 'Pending') list = list.filter(d => !la[d['DVR Code']] || QUICK[d['DVR Code']]);
   if (f.filter === 'Done') list = list.filter(d => la[d['DVR Code']]);
   if (f.filter === 'Issues') list = list.filter(d => ['done-bad', 'done-warn'].includes(status(d)));
-  const openBy = {}; S.data.exceptions.forEach(x => { if (x.Status !== 'Resolved') openBy[x['DVR Code']] = (openBy[x['DVR Code']] || 0) + 1; });
+  // group by software so the auditor finishes one app before switching
+  const swOrder = ['IVMS', 'KVMS'];
+  list = list.slice().sort((x, y) => swOrder.indexOf(x.Software) - swOrder.indexOf(y.Software));
+  const openBy = {}; S.data.exceptions.forEach(x => { if (isLive(x)) openBy[x['DVR Code']] = (openBy[x['DVR Code']] || 0) + 1; });
   const cities = uniq(scopedDevices().map(d => d.City));
+  const sh = shifts().find(x => x.name === f.shift), nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const timing = f.date === todayStr() && sh ? (nowM > toMin(sh.end) ? `${esc(f.shift)} shift ended at ${esc(sh.end)} — audits now are recorded as late for this shift.` : nowM < toMin(sh.start) ? `${esc(f.shift)} shift starts at ${esc(sh.start)}.` : '') : '';
+  const noTicket = S.data.exceptions.filter(x => inScope(x) && isLive(x) && !x['Ticket ID']).length;
+  const pendingBySw = sw => devs.filter(d => d.Software === sw && !la[d['DVR Code']]).length;
+  let lastSw = null;
+  const cards = list.map(d => {
+    const code = d['DVR Code'], a = la[code], st = status(d), qk = QUICK[code];
+    let head = '';
+    if (d.Software !== lastSw) { lastSw = d.Software; head = `<div class="grp">${d.Software === 'KVMS' ? 'KVMS Pro Lite' : 'iVMS'} · ${pendingBySw(d.Software)} pending</div>`; }
+    const statusRow = qk ? '' : !a ? '' : st === 'done-ok' ? '<span class="pill p-ok">✔ All OK</span>' : a['DVR Online'] !== 'Y' ? '<span class="pill p-bad">DVR offline</span>' : `<span class="pill ${st === 'done-bad' ? 'p-bad' : 'p-warn'}">${num(a['Cameras Live'])}/${num(a['Cameras Installed'])} live${a.Playback === 'Error' ? ' · playback ✖' : ''}</span>`;
+    const acts = qk ? `<div class="row"><span class="small grow" style="color:var(--ok);font-weight:600">Live ✔ · Playback ✔ — saving in a moment</span><button class="btn sm" data-act="undo-ok" data-code="${esc(code)}">↶ Undo</button></div><div class="undo-bar"><div></div></div>`
+      : !a ? `<div class="acts"><button class="btn okb" data-act="quick-ok" data-code="${esc(code)}">✓ All OK</button><button class="btn isb" data-act="open-audit" data-code="${esc(code)}">⚠ Report issue</button></div>`
+      : `<div class="row"><span class="small muted grow">${esc(a['Auditor Name'])} · ${fmtTime(a['Submitted At'])}</span><button class="btn sm ghost" data-act="open-audit" data-code="${esc(code)}">Re-audit</button></div>`;
+    return head + `<div class="dvr ${qk ? 'saving' : st}" id="d-${esc(code)}">
+      <div class="row" style="gap:6px"><span class="nm grow">${esc(d['Outlet Name'])}</span>${openBy[code] ? `<span class="pill p-warn" title="Open exceptions">${openBy[code]} open</span>` : ''}<span class="pill sw-${esc(d.Software)}">${esc(d.Software)}</span></div>
+      <div class="small muted">${esc(code)} · ${esc(d.Type)} · ${esc(d.City)} · ${num(d['Cameras Installed'])} cams</div>
+      ${statusRow ? `<div class="row" style="gap:6px">${statusRow}</div>` : ''}${acts}</div>`;
+  }).join('');
   return `<div class="card">
    <div class="row"><h2 class="grow" style="margin:0">Audit — ${esc(fmtDate(f.date))}</h2>
     <div class="seg">${shifts().map(s => `<button class="${s.name === f.shift ? 'on' : ''}" data-act="aud-shift" data-v="${esc(s.name)}">${esc(s.name)}</button>`).join('')}</div></div>
    <div class="row" style="margin-top:10px"><div class="grow"><div class="prog"><div style="width:${pct(done, devs.length)}%"></div></div></div><b>${done}/${devs.length}</b><span class="muted small">done</span></div>
-   ${f.date !== todayStr() ? `<div class="hint">You are viewing ${esc(fmtDate(f.date))}. <a href="#" data-act="aud-today">Back to today</a></div>` : ''}
+   ${f.date !== todayStr() ? `<div class="hint">You are viewing ${esc(fmtDate(f.date))}. <a href="#" data-act="aud-today">Back to today</a></div>` : timing ? `<div class="hint">⏰ ${timing}</div>` : ''}
+   ${done ? '' : `<div class="small muted" style="margin-top:8px">Check the DVR in the software. If every camera is live and playback works → <b style="color:var(--ok)">✓ All OK</b> (one tap). Anything wrong → <b style="color:var(--bad)">⚠ Report issue</b>.</div>`}
    <div class="row" style="margin-top:10px">
     <div class="seg">${['Pending', 'Done', 'Issues', 'All'].map(x => `<button class="${f.filter === x ? 'on' : ''}" data-act="aud-filter" data-v="${x}">${x}</button>`).join('')}</div>
-    <input type="search" class="grow" style="min-width:160px;width:auto" placeholder="Search outlet / code / serial" value="${esc(f.q)}" data-input="aud-q">
+    <input type="search" class="grow" style="min-width:150px;width:auto" placeholder="Search outlet / code" value="${esc(f.q)}" data-input="aud-q">
     ${cities.length > 1 ? `<select style="width:auto" data-change="aud" data-k="city">${opts(cities, f.city, 'All cities')}</select>` : ''}
     <select style="width:auto" data-change="aud" data-k="sw">${opts(['IVMS', 'KVMS'], f.sw, 'iVMS + KVMS')}</select>
    </div></div>
+   ${noTicket ? `<div class="banner">🎫 <span class="grow">${noTicket} issue${noTicket > 1 ? 's' : ''} waiting for a FixFlow ticket</span><button class="btn sm" data-act="alert-go" data-go="noticket">Raise now →</button></div>` : ''}
    ${done === devs.length && devs.length ? `<div class="card" style="margin-top:12px;border-left:4px solid var(--ok)"><b style="color:var(--ok)">🎉 All ${devs.length} DVRs audited for ${esc(f.shift)} shift.</b></div>` : ''}
-   <div class="dvr-list" id="dvrlist">${list.map(d => {
-     const a = la[d['DVR Code']], st = status(d);
-     return `<button class="dvr ${st}" data-act="open-audit" data-code="${esc(d['DVR Code'])}">
-      <div class="row" style="gap:6px"><span class="nm grow">${esc(d['Outlet Name'])}</span><span class="pill sw-${esc(d.Software)}">${esc(d.Software)}</span></div>
-      <div class="small muted">${esc(d['DVR Code'])} · ${esc(d.Type)} · ${esc(d.City)} · ${num(d['Cameras Installed'])} cams</div>
-      <div class="row" style="gap:6px">${!a ? '<span class="pill p-mute">Pending</span>' : st === 'done-ok' ? '<span class="pill p-ok">✔ All OK</span>' : a['DVR Online'] !== 'Y' ? '<span class="pill p-bad">DVR offline</span>' : `<span class="pill ${st === 'done-bad' ? 'p-bad' : 'p-warn'}">${num(a['Cameras Live'])}/${num(a['Cameras Installed'])} live${a.Playback === 'Error' ? ' · playback ✖' : ''}</span>`}
-      ${a ? `<span class="small muted">${esc(a['Auditor Name'])} · ${fmtTime(a['Submitted At'])}</span>` : ''}${openBy[d['DVR Code']] ? `<span class="pill p-warn">${openBy[d['DVR Code']]} open</span>` : ''}</div></button>`;
-   }).join('') || `<div class="empty" style="grid-column:1/-1">${f.filter === 'Pending' ? 'Nothing pending here 👍' : 'No DVRs match.'}</div>`}</div>`;
+   <div class="dvr-list" id="dvrlist">${cards || `<div class="empty" style="grid-column:1/-1">${f.filter === 'Pending' ? 'Nothing pending here 👍' : 'No DVRs match.'}</div>`}</div>`;
 }
+
+/* ----- one-tap "All OK": same submitAudit as the full form (Online, all cameras live, playback OK) with a 4-second undo ----- */
+const QUICK = {};
+function quickOk(code) {
+  if (!canAudit() || QUICK[code]) return;
+  const startedAt = new Date().toISOString(), date = S.aud.date, shift = S.aud.shift || currentShift();
+  QUICK[code] = {timer: setTimeout(() => commitQuick(code, {dvrCode: code, date, shift, startedAt, dvrOnline: 'Y', dvrIssue: '', notLive: [], camIssues: {}, playback: 'OK', playbackIssue: '', playbackCams: [], remarks: ''}), 4000)};
+  render();
+}
+function undoQuick(code) { const q = QUICK[code]; if (!q) return; clearTimeout(q.timer); delete QUICK[code]; render(); toast('Undone — still pending'); }
+async function commitQuick(code, audit) {
+  try {
+    const j = await api('submitAudit', {audit, evidence: []});
+    S.data.audits.push(j.audit); mergeExc(j.exceptions || []);
+    const rec = (j.exceptions || []).filter(x => x.Status === 'Recovered - Verify').length;
+    delete QUICK[code];
+    if (S.view === 'audit') render();
+    toast('✔ ' + (devByCode(code) || {})['Outlet Name'] + ' saved' + (rec ? ` · ${rec} earlier issue${rec > 1 ? 's' : ''} now working` : ''));
+  } catch (e) {
+    delete QUICK[code]; if (S.view === 'audit') render();
+    toast('Not saved: ' + (devByCode(code) || {})['Outlet Name'] + ' — ' + e.message + '. Tap All OK again.', true);
+  }
+}
+function flushQuick() { Object.keys(QUICK).forEach(code => { const q = QUICK[code]; clearTimeout(q.timer); q.timer = null; }); }
 
 /* ================= VIEW: AUDIT FORM ================= */
 const draftKey = d => `te_draft_${d.dvrCode}_${d.date}_${d.shift}`;
@@ -688,9 +745,9 @@ function saveDraft() { if (S.draft) { const {_prev, ...d} = S.draft; if (!LS.set
 function viewAuditForm() {
   const D = S.draft, dev = devByCode(D.dvrCode), inst = num(dev['Cameras Installed']), crit = critCams(dev);
   const live = D.dvrOnline === 'Y' ? inst - D.notLive.length : 0;
-  const issueSel = (level, val, attrs) => `<select ${attrs}><option value="">— select issue —</option>${issuesFor(level).map(i => `<option ${i.Issue === val ? 'selected' : ''}>${esc(i.Issue)}</option>`).join('')}</select>`;
+  const issueSel = (level, val, attrs) => `<div class="chips" ${attrs}>${val ? `<button type="button" class="on" data-act="f-chip" data-v="">${esc(val)} ✓</button><button type="button" data-act="f-chip" data-v="" style="border:0;color:var(--info)">change</button>` : issuesFor(level).map(i => `<button type="button" data-act="f-chip" data-v="${esc(i.Issue)}">${esc(i.Issue)}</button>`).join('')}</div>`;
   const firstCheck = (level, issue) => { const i = issueInfo(level, issue); return i ? `<div class="hint">💡 <b>Likely cause:</b> ${esc(i['Likely Cause'])}<br>🔧 <b>First check:</b> ${esc(i['First Check'])} · <b>Owner:</b> ${esc(i.Owner)} · <b>Severity:</b> ${esc(i.Severity)}</div>` : ''; };
-  const guide = (kind, open) => `<details class="guide" ${open ? 'open' : ''}><summary>📖 How to check in ${esc(dev.Software === 'KVMS' ? 'KVMS Pro Lite' : 'iVMS')} — ${kind === 'Live' ? 'Live view' : 'Playback'}</summary><ol>${guideSteps(dev.Software, kind).map(s => `<li>${esc(s)}</li>`).join('')}</ol>${kind === 'Playback' ? `<div class="small"><b>✅ OK</b> = timeline shows a coloured recording bar and video plays. <b>❌ Error</b> = no bar, a gap, or "no record found".</div>` : ''}</details>`;
+  const guide = (kind, open) => `<details class="guide" ${open && !LS.get('te_guide_' + dev.Software + kind) ? 'open' : ''} data-guide="${esc(dev.Software + kind)}"><summary>📖 How to check in ${esc(dev.Software === 'KVMS' ? 'KVMS Pro Lite' : 'iVMS')} — ${kind === 'Live' ? 'Live view' : 'Playback'}</summary><ol>${guideSteps(dev.Software, kind).map(s => `<li>${esc(s)}</li>`).join('')}</ol>${kind === 'Playback' ? `<div class="small"><b>✅ OK</b> = timeline shows a coloured recording bar and video plays. <b>❌ Error</b> = no bar, a gap, or "no record found".</div>` : ''}</details>`;
   const fails = summariseDraft(D, inst);
   const pbChosen = D.playbackCams === 'ALL' ? 'ALL' : D.playbackCams;
   return `
@@ -704,20 +761,20 @@ function viewAuditForm() {
   <div class="step"><div class="hd"><div class="no ${D.dvrOnline === 'Y' ? 'ok' : D.dvrOnline === 'N' ? 'bad' : ''}">1</div><b class="grow">Is the DVR online?</b></div><div class="bd">
    ${guide('Live', D.dvrOnline === null)}
    <div class="choice"><button class="g ${D.dvrOnline === 'Y' ? 'on' : ''}" data-act="f-online" data-v="Y">✅ Online — cameras load</button><button class="r ${D.dvrOnline === 'N' ? 'on' : ''}" data-act="f-online" data-v="N">❌ Offline / can't connect</button></div>
-   ${D.dvrOnline === 'N' ? `<label class="lbl">DVR issue *</label>${issueSel('DVR', D.dvrIssue, 'data-change="f-dvrissue"')}${firstCheck('DVR', D.dvrIssue)}<div class="small muted" style="margin-top:6px">All ${inst} cameras will be counted as not live. Steps 2–3 are skipped.</div>` : ''}
+   ${D.dvrOnline === 'N' ? `<label class="lbl">DVR issue *</label>${issueSel('DVR', D.dvrIssue, 'data-chip="dvr"')}${firstCheck('DVR', D.dvrIssue)}<div class="small muted" style="margin-top:6px">All ${inst} cameras will be counted as not live. Steps 2–3 are skipped.</div>` : ''}
   </div></div>
 
   <div class="step ${D.dvrOnline !== 'Y' ? 'off' : ''}"><div class="hd"><div class="no ${D.dvrOnline === 'Y' ? (D.notLive.length ? 'bad' : 'ok') : ''}">2</div><b class="grow">Camera live view</b><span class="pill ${D.notLive.length ? 'p-bad' : 'p-ok'}">${live}/${inst} live</span></div><div class="bd">
    <div class="small muted" style="margin-bottom:8px">All cameras start as <b style="color:var(--ok)">live</b>. Tap only the cameras with a problem.</div>
    <div class="cams">${Array.from({length: inst}, (_, i) => i + 1).map(n => `<div class="cam ${D.notLive.includes(n) ? 'down' : ''} ${crit.has(n) ? 'crit' : ''}" data-act="f-cam" data-n="${n}"><div class="cn">Cam ${n}</div><div class="cl">${esc(camLabel(dev['DVR Code'], n) || (D.notLive.includes(n) ? 'not live' : 'live'))}</div></div>`).join('')}</div>
-   ${D.notLive.length ? `<div style="margin-top:12px">${D.notLive.map(n => `<label class="lbl">Cam ${n}${camLabel(dev['DVR Code'], n) ? ' — ' + esc(camLabel(dev['DVR Code'], n)) : ''}${crit.has(n) ? ' ★ critical' : ''} — issue *</label>${issueSel('Camera', D.camIssues[n] || '', `data-change="f-camissue" data-n="${n}"`)}`).join('')}
+   ${D.notLive.length ? `<div style="margin-top:12px">${D.notLive.map(n => `<label class="lbl">Cam ${n}${camLabel(dev['DVR Code'], n) ? ' — ' + esc(camLabel(dev['DVR Code'], n)) : ''}${crit.has(n) ? ' ★ critical' : ''} — issue *</label>${issueSel('Camera', D.camIssues[n] || '', `data-chip="cam" data-n="${n}"`)}`).join('')}
     ${D.notLive.length > 1 ? `<button class="btn sm" style="margin-top:8px" data-act="f-sameissue">Apply first issue to all ${D.notLive.length}</button>` : ''}</div>` : ''}
   </div></div>
 
   <div class="step ${D.dvrOnline !== 'Y' ? 'off' : ''}"><div class="hd"><div class="no ${D.playback === 'OK' ? 'ok' : D.playback === 'Error' ? 'bad' : ''}">3</div><b class="grow">Playback (recording) check</b><span class="small muted">${esc(setting('Playback Check Time', 'Yesterday 11:00 AM'))}</span></div><div class="bd">
    ${guide('Playback', D.dvrOnline === 'Y' && !D.playback)}
    <div class="choice"><button class="g ${D.playback === 'OK' ? 'on' : ''}" data-act="f-pb" data-v="OK">✅ Playback OK</button><button class="r ${D.playback === 'Error' ? 'on' : ''}" data-act="f-pb" data-v="Error">❌ Playback error</button><button class="a ${D.playback === 'Not Checked' ? 'on' : ''}" data-act="f-pb" data-v="Not Checked">⏭ Couldn't check</button></div>
-   ${D.playback === 'Error' ? `<label class="lbl">Playback issue *</label>${issueSel('Playback', D.playbackIssue, 'data-change="f-pbissue"')}${firstCheck('Playback', D.playbackIssue)}
+   ${D.playback === 'Error' ? `<label class="lbl">Playback issue *</label>${issueSel('Playback', D.playbackIssue, 'data-chip="pb"')}${firstCheck('Playback', D.playbackIssue)}
     <label class="lbl">Which cameras have no recording? *</label>
     <div class="seg"><button class="${pbChosen === 'ALL' ? 'on' : ''}" data-act="f-pball" data-v="ALL">All cameras</button><button class="${pbChosen !== 'ALL' ? 'on' : ''}" data-act="f-pball" data-v="SOME">Specific cameras</button></div>
     ${pbChosen !== 'ALL' ? `<div class="cams" style="margin-top:8px">${Array.from({length: inst}, (_, i) => i + 1).map(n => `<div class="cam ${pbChosen.includes(n) ? 'down' : ''}" data-act="f-pbcam" data-n="${n}"><div class="cn">Cam ${n}</div><div class="cl">${pbChosen.includes(n) ? 'no recording' : 'tap if failed'}</div></div>`).join('')}</div>` : '<div class="small muted" style="margin-top:6px">Usually a hard-disk problem → Critical.</div>'}` : ''}
@@ -725,7 +782,7 @@ function viewAuditForm() {
   </div></div>
 
   <div class="step"><div class="hd"><div class="no ${D.evidence.length ? 'ok' : ''}">4</div><b class="grow">Screenshot evidence</b><span class="small muted">${fails.length ? (yes(setting('Evidence Required', 'Y')) ? 'required' : 'recommended') : 'optional'}</span></div><div class="bd">
-   <div class="paste" tabindex="0" id="pastezone">📋 <b>Paste screenshot here</b> — press <b>Win + Shift + S</b> (Mac: Cmd + Ctrl + Shift + 4), select the grid, then click here and press <b>Ctrl + V</b>.</div>
+   <div class="paste" tabindex="0" id="pastezone">📋 <b>Win + Shift + S</b> → select the grid → <b>Ctrl + V</b> anywhere on this page.<br><span class="small muted">(Mac: Cmd + Ctrl + Shift + 4, then Cmd + V)</span></div>
    <div class="row" style="margin-top:8px"><label class="btn sm">📁 Upload / take photo<input type="file" accept="image/*" multiple hidden data-change="f-file"></label><span class="small muted">Max 6 images · auto-compressed</span></div>
    <div class="thumbs">${D.evidence.map((e, i) => `<div class="thumb"><img src="${e.data}" alt="evidence ${i + 1}"><button data-act="f-delimg" data-i="${i}" title="Remove">✕</button></div>`).join('')}</div>
    <label class="lbl">Remarks</label><textarea data-input="f-remarks" placeholder="Anything the technician should know (e.g. site staff informed, power cut in area)">${esc(D.remarks)}</textarea>
@@ -767,13 +824,8 @@ async function submitAudit() {
     mergeExc(j.exceptions || []);
     LS.del(draftKey(D));
     const dev = devByCode(D.dvrCode), nRaised = (j.exceptions || []).filter(x => x['Last Audit ID'] === j.audit['Audit ID'] && x.Status !== 'Recovered - Verify').length, nRec = (j.exceptions || []).filter(x => x.Status === 'Recovered - Verify').length;
-    S.draft = null; S.busy = false; S.view = 'audit'; render();
-    const la = latestAudits(S.aud.date, S.aud.shift);
-    const next = scopedDevices().find(d => !la[d['DVR Code']] && (S.aud.city === 'All' || d.City === S.aud.city) && (S.aud.sw === 'All' || d.Software === S.aud.sw));
-    openLayer(`<div class="sheet"><h2>✔ ${esc(dev['Outlet Name'])} saved</h2>
-     <p>${nRaised ? `<b style="color:var(--bad)">${nRaised} exception${nRaised > 1 ? 's' : ''}</b> raised/updated. Raise the FixFlow ticket from the Exceptions tab.` : '<b style="color:var(--ok)">All clear.</b>'}${nRec ? `<br><b style="color:var(--ok)">${nRec}</b> earlier issue${nRec > 1 ? 's' : ''} now working → marked <i>Recovered - Verify</i>.` : ''}</p>
-     <div class="row">${next ? `<button class="btn pri grow" data-act="open-audit" data-code="${esc(next['DVR Code'])}">Next: ${esc(next['Outlet Name'])} →</button>` : '<span class="grow" style="color:var(--ok);font-weight:700">🎉 All DVRs done for this shift</span>'}
-     ${nRaised ? '<button class="btn" data-act="go" data-v="exceptions">Exceptions</button>' : ''}<button class="btn ghost" data-act="close">Close</button></div></div>`);
+    S.draft = null; S.busy = false; S.view = 'audit'; render(); window.scrollTo(0, 0);
+    toast(`✔ ${dev['Outlet Name']} saved` + (nRaised ? ` · ${nRaised} issue${nRaised > 1 ? 's' : ''} raised — add FixFlow ticket` : '') + (nRec ? ` · ${nRec} earlier issue${nRec > 1 ? 's' : ''} now working` : ''));
   } catch (e) {
     S.busy = false; render(); saveDraft();
     toast('Not submitted: ' + e.message + ' — your entries are kept.', true);
@@ -849,7 +901,8 @@ function excCard(x) {
     ${num(x['Times Seen']) > 1 ? `<span class="pill p-warn">Seen ${num(x['Times Seen'])}×</span>` : ''}
     ${x['Ticket ID'] ? `<span class="pill p-info">🎫 ${esc(x['Ticket ID'])}</span>` : x.Status !== 'Resolved' ? '<span class="pill p-bad">No ticket</span>' : ''}
     <span class="pill sw-${esc(x.Software)}">${esc(x.Software)}</span><span class="small muted">${esc(x['DVR Code'])} · ${esc(x.City)}</span></div>
-   <details><summary>Details & actions</summary>
+   ${quickActions(x)}
+   <details><summary>${canAudit() ? 'More details & actions' : 'Details'}</summary>
     <div class="kv"><div>Exception ID</div><div>${esc(x['Exception ID'])}</div><div>First seen</div><div>${fmtDT(x['First Seen'])} by ${esc(x['Raised By'])}</div><div>Last seen</div><div>${fmtDT(x['Last Seen'])}</div>
      ${info ? `<div>Likely cause</div><div>${esc(info['Likely Cause'])}</div><div>First check</div><div>${esc(info['First Check'])}</div><div>Owner</div><div>${esc(info.Owner)}</div>` : ''}
      ${x['Resolved At'] ? `<div>Resolved</div><div>${fmtDT(x['Resolved At'])} by ${esc(x['Resolved By'])}</div><div>Root cause</div><div>${esc(x['Root Cause'])}</div><div>Action taken</div><div>${esc(x['Action Taken'])}</div>` : ''}
@@ -860,6 +913,12 @@ function excCard(x) {
     <div class="row" style="margin-top:8px"><select style="flex:1;min-width:140px" id="st-${esc(x['Exception ID'])}">${statuses.map(s => `<option ${s === x.Status ? 'selected' : ''}>${s}</option>`).join('')}</select><button class="btn sm" data-act="x-status" data-id="${esc(x['Exception ID'])}">Update status</button></div>
     ${canResolve() && x.Status !== 'Resolved' ? `<button class="btn sm" style="margin-top:8px;border-color:var(--ok);color:var(--ok)" data-act="x-resolve" data-id="${esc(x['Exception ID'])}">✔ Resolve with root cause</button>` : ''}` : ''}
    </details></div>`;
+}
+function quickActions(x) {
+  const id = esc(x['Exception ID']);
+  if (canResolve() && x.Status === 'Recovered - Verify') return `<div class="qa"><span class="small grow" style="color:var(--ok);font-weight:600">✔ Found working in a later audit</span><button class="btn sm pri" data-act="x-verify" data-id="${id}">Verify & close</button></div>`;
+  if (canAudit() && isLive(x) && !x['Ticket ID']) return `<div class="qa"><button class="btn sm" data-act="x-copy" data-id="${id}">📋 Copy ticket text</button><input type="text" placeholder="Paste FixFlow ticket ID" id="tkq-${id}"><button class="btn sm pri" data-act="x-ticketq" data-id="${id}">Save</button></div>`;
+  return '';
 }
 function ticketText(x) {
   const dev = devByCode(x['DVR Code']) || {}, info = issueInfo(x.Level, x.Issue) || {}, cl = camLabel(x['DVR Code'], x['Camera No']);
@@ -953,8 +1012,17 @@ const ACT = {
   'f-pbcam': el => { const n = +el.dataset.n, D = S.draft; if (D.playbackCams === 'ALL') D.playbackCams = []; D.playbackCams = D.playbackCams.includes(n) ? D.playbackCams.filter(x => x !== n) : [...D.playbackCams, n].sort((a, b) => a - b); saveDraft(); render(); },
   'f-delimg': el => { S.draft.evidence.splice(+el.dataset.i, 1); saveDraft(); render(); },
   'f-submit': () => submitAudit(),
+  'quick-ok': el => quickOk(el.dataset.code),
+  'undo-ok': el => undoQuick(el.dataset.code),
+  'f-chip': el => {
+    const box = el.parentNode, k = box.dataset.chip, v = el.dataset.v, D = S.draft;
+    if (k === 'dvr') D.dvrIssue = v; else if (k === 'pb') D.playbackIssue = v; else if (k === 'cam') D.camIssues[box.dataset.n] = v;
+    saveDraft(); render();
+  },
+  'x-verify': el => resolveSheet(el.dataset.id),
   'exc-status': el => { S.exc.status = el.dataset.v; render(); },
   'x-copy': el => { const x = S.data.exceptions.find(y => y['Exception ID'] === el.dataset.id); copyText(ticketText(x)).then(ok => toast(ok ? 'Ticket text copied — paste in FixFlow' : 'Copy failed', !ok)); },
+  'x-ticketq': el => { const id = el.dataset.id, v = document.getElementById('tkq-' + id).value.trim(); if (!v) return toast('Paste the FixFlow ticket ID first', true); updExc(id, {ticketId: v}, 'Ticket ID saved'); },
   'x-ticket': el => { const id = el.dataset.id, v = document.getElementById('tk-' + id).value.trim(); if (!v) return toast('Enter the FixFlow ticket ID', true); updExc(id, {ticketId: v}, 'Ticket ID saved'); },
   'x-status': el => { const id = el.dataset.id, v = document.getElementById('st-' + id).value; if (v === 'Resolved') return resolveSheet(id); updExc(id, {status: v}, 'Status updated'); },
   'x-resolve': el => resolveSheet(el.dataset.id),
@@ -987,9 +1055,10 @@ document.addEventListener('input', e => {
     render(); const n = document.querySelector(`[data-input="${k}"]`); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (er) {} }
   }, 250);
 });
+document.addEventListener('toggle', e => { const g = e.target.dataset && e.target.dataset.guide; if (g && !e.target.open) LS.set('te_guide_' + g, 1); }, true);
 document.addEventListener('focusin', e => { if (e.target.id === 'pastezone') e.target.classList.add('hot'); });
 document.addEventListener('focusout', e => { if (e.target.id === 'pastezone') e.target.classList.remove('hot'); });
-window.addEventListener('beforeunload', e => { if (S.draft && (S.draft.dvrOnline || S.draft.evidence.length)) { saveDraft(); } });
+window.addEventListener('beforeunload', e => { if (S.draft && (S.draft.dvrOnline || S.draft.evidence.length)) { saveDraft(); } if (Object.keys(QUICK).length) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ================= DEMO BACKEND (mirrors Code.gs) ================= */
 const Demo = {
