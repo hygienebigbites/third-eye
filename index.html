@@ -142,6 +142,46 @@ tfoot td{font-weight:800;background:#f6f8fb;position:sticky;bottom:0}
 .sess:hover{border-color:var(--teal2)}.sess b{display:block;font-size:15px}.sess small{display:block;color:var(--ink3);font-size:11.5px}
 .sess .si,.sess-other .si{font-size:22px}.sess .sgo{font-weight:700;color:var(--teal);white-space:nowrap}
 .sess-other{border:1.5px dashed #b6c2d2;border-radius:12px;padding:12px;margin-top:10px;background:#fafcff}
+.hero{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:center}
+@media(max-width:720px){.hero{grid-template-columns:1fr}}
+.hero-l{display:flex;flex-direction:column;align-items:center;gap:6px}
+.hero-r{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:1000px){.hero-r{grid-template-columns:repeat(4,1fr)}}
+.stchip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px}
+.stchip .dot{width:10px;height:10px;border-radius:50%;background:currentColor}
+.st-good{background:#e7f6ec;color:#0a7d0a}.st-warn{background:#fff3db;color:#8a5a00}.st-crit{background:#fdeaea;color:#b42318}.st-none{background:#eef1f5;color:#4a5a70}
+.ht{border:1px solid var(--line);border-radius:12px;padding:12px;border-top:5px solid #c9ced6;background:#fff}
+.ht-good{border-top-color:#0ca30c}.ht-warn{border-top-color:#fab219}.ht-crit{border-top-color:#d03b3b}
+.ht-h{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink2)}.ht-i{font-size:16px}
+.ht-dot{margin-left:auto;width:9px;height:9px;border-radius:50%;background:#c9ced6}.ht-good .ht-dot{background:#0ca30c}.ht-warn .ht-dot{background:#fab219}.ht-crit .ht-dot{background:#d03b3b}
+.ht-v{font-size:28px;font-weight:800;line-height:1.15;margin-top:4px}.ht-v small{font-size:15px;color:var(--ink3);font-weight:600}
+.ht-s{font-size:12px;color:var(--ink2);margin-top:2px}
+.mbar{height:6px;background:#eef1f5;border-radius:6px;margin-top:6px;overflow:hidden}.mbar i{display:block;height:100%;background:#0d9488;border-radius:6px}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.achip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:13px}
+.achip b{font-size:16px}
+.okline{margin-top:10px;color:#0a7d0a;font-weight:700}
+.toplist{margin-top:10px}.trow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-top:1px solid var(--line);cursor:pointer}.trow:hover{background:#f8fafc}
+.sev{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex:none;background:#9aa4b2}
+.s-Critical{background:#d03b3b}.s-High{background:#ec835a}.s-Medium{background:#fab219;color:#0b0b0b}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--ink2);margin:8px 0 4px}.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend .sw{width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-style:normal;font-weight:800}
+.mapcity{margin-top:10px}.mapc-h{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+.tile{border:0;border-radius:8px;padding:7px 8px;text-align:left;cursor:pointer;color:#fff;min-height:58px;display:flex;flex-direction:column;justify-content:space-between;position:relative}
+.tile .ti{position:absolute;top:5px;right:7px;font-weight:800;font-size:13px}
+.tile .tn{font-weight:700;font-size:12.5px;padding-right:18px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}.tile .ts2{font-size:10.5px;opacity:.92}
+.t-good{background:#0ca30c}.t-warn{background:#fab219;color:#0b0b0b}.t-crit{background:#d03b3b}.t-none{background:#e3e6eb;color:#4a5a70}
+.tile:hover{outline:3px solid rgba(15,27,45,.25)}
+.lvls{display:flex;gap:8px;margin-bottom:10px}.lvl{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}.lvl span{font-size:18px}.lvl b{display:block;font-size:20px}.lvl small{color:var(--ink3)}
+.hb-r{display:grid;grid-template-columns:minmax(120px,46%) 1fr 26px;gap:8px;align-items:center;margin:5px 0;font-size:12.5px}
+.hb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb-t{background:#eef1f5;border-radius:4px;height:12px}.hb-t i{display:block;height:100%;background:#0d9488;border-radius:4px}
+.segbar{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden}.segbar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.mk{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;box-shadow:var(--sh)}
+.mk span{font-size:22px;grid-row:span 2}.mk b{font-size:20px}.mk small{color:var(--ink3);font-size:11.5px}
+details.more>summary{cursor:pointer;font-weight:700;color:var(--info)}
+#tip{position:fixed;z-index:200;background:#0f1b2d;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;white-space:pre-line;max-width:280px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .ts{border:1px solid #cfe9e5;background:#f5fbfa;border-radius:10px;padding:10px 12px;margin-top:8px}
 .ts-h{display:flex;align-items:center;gap:8px;font-weight:700;color:#0b6b62;margin-bottom:4px}
 .ts-q{padding:6px 0;border-top:1px dashed #d7ebe8}.ts-q:first-of-type{border-top:0}
@@ -568,29 +608,154 @@ function rep(codes) {
 /* ================= VIEW: DASHBOARD ================= */
 function opts(list, cur, allLabel) { return (allLabel ? `<option value="All">${allLabel}</option>` : '') + list.map(v => `<option ${v === cur ? 'selected' : ''} value="${esc(v)}">${esc(v)}</option>`).join(''); }
 const uniq = a => [...new Set(a.filter(Boolean))];
+/* ================= DASHBOARD v2 — visual, glanceable ================= */
+const STC = {good: '#0ca30c', warn: '#fab219', serious: '#ec835a', crit: '#d03b3b', none: '#c9ced6'};
+function healthLevel(p) { const t = num(setting('Target Healthy %', 98)) || 98; return p >= t ? 'good' : p >= t - 5 ? 'warn' : 'crit'; }
+const LVL_TXT = {good: 'On target', warn: 'Below target', crit: 'Needs attention'};
+function ring(pctVal, lvl, size = 150) {
+  const r = size / 2 - 12, c = 2 * Math.PI * r, f = Math.max(0, Math.min(100, pctVal)) / 100;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${pctVal}% fully healthy">
+   <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#e8ebf0" stroke-width="14"/>
+   <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${STC[lvl]}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+   <text x="50%" y="47%" text-anchor="middle" font-size="${size / 5}" font-weight="800" fill="#152033">${pctVal}%</text>
+   <text x="50%" y="62%" text-anchor="middle" font-size="11.5" fill="#4a5a70">fully healthy</text></svg>`;
+}
+function dvrState(d, a, liveExc) {
+  const crit = liveExc.some(x => x['DVR Code'] === d['DVR Code'] && x.Severity === 'Critical');
+  if (!a) return {s: 'none', icon: '…', label: 'Not audited'};
+  if (a['DVR Online'] !== 'Y') return {s: 'crit', icon: '✕', label: 'DVR offline'};
+  if (a.Playback === 'Error' && a['Playback Cameras'] === 'ALL') return {s: 'crit', icon: '⏺', label: 'Not recording'};
+  const inst = num(a['Cameras Installed']), lv = num(a['Cameras Live']);
+  if (lv < inst || a.Playback === 'Error') return {s: crit ? 'crit' : 'warn', icon: '⚠', label: `${lv}/${inst} live${a.Playback === 'Error' ? ' · rec ✖' : ''}`};
+  if (a.Playback === 'Not Checked') return {s: 'warn', icon: '?', label: 'Playback unchecked'};
+  return {s: 'good', icon: '✓', label: `${inst}/${inst} live`};
+}
+function shortName(n) { return String(n).replace(/ Layout| Nagar| Road/g, m => ({' Layout': '', ' Nagar': ' Ngr', ' Road': ' Rd'}[m])); }
+function siteMap(r, liveExc) {
+  const by = {}; r.rows.forEach(({d, a}) => { (by[d.City] = by[d.City] || []).push({d, a, st: dvrState(d, a, liveExc)}); });
+  const cnt = {good: 0, warn: 0, crit: 0, none: 0};
+  Object.values(by).flat().forEach(x => cnt[x.st.s]++);
+  const order = {crit: 0, warn: 1, none: 2, good: 3};
+  return `<div class="legend">${[['good', '✓', 'Healthy'], ['warn', '⚠', 'Partly down'], ['crit', '✕', 'Down / not recording'], ['none', '…', 'Not audited']].map(([k, i, l]) => `<span><i class="sw" style="background:${STC[k]}">${i}</i>${l} <b>${cnt[k]}</b></span>`).join('')}</div>
+   ${Object.entries(by).map(([city, list]) => {
+     const ok = list.filter(x => x.st.s === 'good').length;
+     return `<div class="mapcity"><div class="mapc-h"><b>${esc(city)}</b><span class="muted small">${ok}/${list.length} DVRs healthy</span></div><div class="tiles">
+      ${list.sort((x, y) => order[x.st.s] - order[y.st.s] || String(x.d['Outlet Name']).localeCompare(y.d['Outlet Name'])).map(({d, a, st}) => {
+        const ex = liveExc.filter(x => x['DVR Code'] === d['DVR Code']);
+        const tip = `${d['Outlet Name']} (${d['DVR Code']}) · ${d.Software}\n${st.label}${a ? `\nAudited by ${a['Auditor Name']} at ${fmtTime(a['Submitted At'])}` : ''}${ex.length ? '\n' + ex.map(x => `• ${x.Level === 'Camera' ? 'Cam ' + x['Camera No'] : x.Level}: ${x.Issue} (${daysLabel(x)})`).join('\n') : ''}`;
+        return `<button class="tile t-${st.s}" data-act="tile" data-code="${esc(d['DVR Code'])}" data-tip="${esc(tip)}" aria-label="${esc(d['Outlet Name'] + ': ' + st.label)}">
+         <span class="ti">${st.icon}</span><span class="tn">${esc(shortName(d['Outlet Name']))}</span><span class="ts2">${esc(d.Type === 'CK' ? 'CK · ' + st.label : st.label)}</span></button>`;
+      }).join('')}</div></div>`;
+   }).join('')}`;
+}
+function trendLine(f, devs) {
+  const tgt = num(setting('Target Healthy %', 98)) || 98, days = [];
+  for (let i = 13; i >= 0; i--) { const d = addDays(f.date, -i), st = scopeStats(devs, latestAudits(d, 'All'), d); days.push({d, v: st.camsAudited ? st.healthyPct : null}); }
+  const pts = days.filter(x => x.v !== null);
+  if (pts.length < 2) return '<div class="empty small">Trend appears after 2 days of audits.</div>';
+  const W = 560, H = 170, L = 34, R = 78, T = 12, B = 26, lo = Math.max(0, Math.floor(Math.min(tgt, ...pts.map(p => p.v)) / 5) * 5 - 5), hi = 100;
+  const X = i => L + i * (W - L - R) / (days.length - 1), Y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  let path = '', started = false;
+  days.forEach((p, i) => { if (p.v === null) { started = false; return; } path += (started ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); started = true; });
+  const last = days.map((p, i) => ({...p, i})).filter(p => p.v !== null).slice(-1)[0];
+  const grid = [lo, Math.round((lo + hi) / 2), hi].map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e1e0d9" stroke-width="1"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10.5" fill="#7b8899">${v}%</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-height:200px" role="img" aria-label="Fully healthy % over the last 14 days">${grid}
+   <line x1="${L}" x2="${W - R}" y1="${Y(tgt)}" y2="${Y(tgt)}" stroke="#0ca30c" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W - R + 4}" y="${Y(tgt) + 4}" font-size="10.5" fill="#006300">target ${tgt}%</text>
+   <path d="${path}" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-linejoin="round"/>
+   ${days.map((p, i) => p.v === null ? '' : `<circle cx="${X(i)}" cy="${Y(p.v)}" r="4.5" fill="${STC[healthLevel(p.v)]}" stroke="#fff" stroke-width="2"/><circle cx="${X(i)}" cy="${Y(p.v)}" r="13" fill="transparent" data-tip="${esc(fmtDate(p.d) + ': ' + p.v + '% fully healthy')}"/>`).join('')}
+   <text x="${X(last.i) + 8}" y="${Y(last.v) - 8}" font-size="12" font-weight="700" fill="#152033">${last.v}%</text>
+   ${days.map((p, i) => i % 2 === 1 ? '' : `<text x="${X(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="${p.v === null ? '#b8bec8' : '#7b8899'}">${esc(new Date(p.d + 'T00:00:00').toLocaleDateString('en-IN', {day: '2-digit', month: 'short'}))}</text>`).join('')}</svg>
+   <div class="small muted">Dots: <span style="color:#0ca30c">●</span> on target · <span style="color:#d29a00">●</span> below · <span style="color:#d03b3b">●</span> needs attention. Gaps = no audit that day.</div>`;
+}
+function issueTypes(live) {
+  if (!live.length) return '<div class="empty">No open issues 🎉</div>';
+  const lv = {DVR: ['🖥', 'DVR'], Camera: ['📷', 'Camera'], Playback: ['⏺', 'Recording']};
+  const by = {}; live.forEach(x => { const k = x.Level + '|' + x.Issue; by[k] = (by[k] || 0) + 1; });
+  const arr = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 7), max = arr[0][1];
+  const lc = {}; live.forEach(x => lc[x.Level] = (lc[x.Level] || 0) + 1);
+  return `<div class="lvls">${Object.keys(lv).map(k => `<div class="lvl"><span>${lv[k][0]}</span><b>${lc[k] || 0}</b><small>${lv[k][1]}</small></div>`).join('')}</div>
+   <div class="hb">${arr.map(([k, v]) => { const [l, iss] = k.split('|'); return `<div class="hb-r" data-tip="${esc(lv[l][1] + ': ' + iss + ' — ' + v + ' open')}"><span class="hb-l">${lv[l][0]} ${esc(iss)}</span><span class="hb-t"><i style="width:${Math.max(6, v / max * 100)}%"></i></span><b>${v}</b></div>`; }).join('')}</div>`;
+}
+function ageBar(live) {
+  if (!live.length) return '';
+  const b = [0, 0, 0]; live.forEach(x => { const h = hoursSince(x['First Seen']); b[h < 24 ? 0 : h < 72 ? 1 : 2]++; });
+  const cols = ['#fde2b8', '#f5a524', '#b45309'], lab = ['< 1 day', '1–3 days', '> 3 days'], tot = live.length;
+  return `<div class="segbar">${b.map((n, i) => n ? `<i style="flex:${n};background:${cols[i]}" data-tip="${lab[i]}: ${n} issue${n > 1 ? 's' : ''}"><span style="color:${i ? '#fff' : '#5b3a00'}">${n}</span></i>` : '').join('')}</div>
+   <div class="legend" style="margin-top:6px">${lab.map((l, i) => `<span><i class="sw" style="background:${cols[i]}"></i>${l} <b>${b[i]}</b></span>`).join('')}</div>`;
+}
 function viewDashboard() {
   const f = S.dash, r = computeReport(f), alerts = computeAlerts(r, f);
   const cities = uniq(S.cfg.devices.map(d => d.City)), types = uniq(S.cfg.devices.map(d => d.Type)), sws = uniq(S.cfg.devices.map(d => d.Software));
-  const act = S.data.exceptions.filter(x => x.Status !== 'Resolved' && r.devs.some(d => d['DVR Code'] === x['DVR Code']));
+  const codes = new Set(r.devs.map(d => d['DVR Code']));
+  const act = S.data.exceptions.filter(x => x.Status !== 'Resolved' && codes.has(x['DVR Code'])), live = act.filter(isLive);
+  const lvl = r.audited ? healthLevel(r.healthyPct) : 'none', tgt = num(setting('Target Healthy %', 98)) || 98;
+  const prev = prevShiftOf(f.date, r.shift), P = prev ? scopeStats(r.devs, prev.la, prev.date) : null, dh = P && P.camsAudited ? Math.round((r.healthyPct - P.healthyPct) * 10) / 10 : null;
+  const crit = live.filter(x => x.Severity === 'Critical'), sla = live.filter(slaBreached), noT = live.filter(x => !x['Ticket ID']), rv = act.filter(x => x.Status === 'Recovered - Verify'), ro = rep(codes);
+  const res7 = S.data.exceptions.filter(x => codes.has(x['DVR Code']) && x.Status === 'Resolved' && x['Resolved At'] && hoursSince(x['Resolved At']) <= 168);
+  const mttr = res7.length ? res7.reduce((t, x) => t + (new Date(x['Resolved At']) - new Date(x['First Seen'])) / 36e5, 0) / res7.length : null;
+  const cov = live.length ? Math.round((live.length - noT.length) / live.length * 100) : 100;
+  const tile = (icon, label, big, sub, st, extra = '') => `<div class="ht ht-${st}"><div class="ht-h"><span class="ht-i">${icon}</span>${label}<span class="ht-dot" title="${st}"></span></div><div class="ht-v">${big}</div>${extra}<div class="ht-s">${sub}</div></div>`;
+  const chips = [
+    [crit.length, '🔴', 'Critical', 'p-bad', `data-act="dash-exc" data-f="sev:Critical"`],
+    [sla.length, '⏰', 'Past SLA', 'p-bad', `data-act="dash-exc" data-f="status:SLA"`],
+    [noT.length, '🎫', 'No Fix Engine ticket', 'p-warn', `data-act="dash-exc" data-f="status:NoTicket"`],
+    [ro.length, '🔁', 'Repeat sites', 'p-warn', `data-act="dash-exc" data-f="status:Active"`],
+    [rv.length, '✔', 'Recovered — verify', 'p-info', `data-act="dash-exc" data-f="status:Recovered - Verify"`],
+    [r.pending, '📋', 'Not audited yet', 'p-mute', canAudit() ? `data-act="go" data-v="audit"` : '']
+  ].filter(c => c[0]);
+  const top = live.slice().sort((a, b) => ({Critical: 0, High: 1, Medium: 2, Low: 3}[a.Severity] - {Critical: 0, High: 1, Medium: 2, Low: 3}[b.Severity]) || hoursSince(b['First Seen']) - hoursSince(a['First Seen'])).slice(0, 5);
   const k = (cls, l, v, s) => `<div class="kpi ${cls}"><div class="l">${l}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
   return `
-  <div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0" class="grow">CCTV health — ${esc(fmtDate(f.date))}, ${esc(r.shift)} shift</h2>
-   <button class="btn sm" data-act="wa">📋 WhatsApp summary</button><button class="btn sm" data-act="csv">⬇ CSV</button><button class="btn sm" data-act="refresh">⟳ Refresh</button></div>
+  <div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0" class="grow">CCTV health — ${esc(fmtDate(f.date))} · ${esc(r.shift)}</h2>
+   <button class="btn sm" data-act="wa">📋 WhatsApp</button><button class="btn sm" data-act="csv">⬇ CSV</button><button class="btn sm" data-act="refresh">⟳</button></div>
    <div class="filters">
     <div><label class="lbl">Date</label><input type="date" data-change="dash" data-k="date" value="${f.date}" max="${todayStr()}"></div>
-    <div><label class="lbl">Shift</label><select data-change="dash" data-k="shift"><option value="AUTO" ${f.shift === 'AUTO' ? 'selected' : ''}>Current (${esc(currentShift())})</option>${opts(sessionNames(f.date), f.shift)}<option value="All" ${f.shift === 'All' ? 'selected' : ''}>Whole day (latest)</option></select></div>
+    <div><label class="lbl">Audit</label><select data-change="dash" data-k="shift"><option value="AUTO" ${f.shift === 'AUTO' ? 'selected' : ''}>Current (${esc(currentShift())})</option>${opts(sessionNames(f.date), f.shift)}<option value="All" ${f.shift === 'All' ? 'selected' : ''}>Whole day (latest)</option></select></div>
     <div><label class="lbl">City</label><select data-change="dash" data-k="city" ${userCity() !== 'All' ? 'disabled' : ''}>${opts(cities, f.city, 'All cities')}</select></div>
     <div><label class="lbl">Type</label><select data-change="dash" data-k="type">${opts(types, f.type, 'Outlet + CK')}</select></div>
     <div><label class="lbl">Software</label><select data-change="dash" data-k="sw">${opts(sws, f.sw, 'iVMS + KVMS')}</select></div>
    </div></div>
+  ${S.mode === 'live' && S.backendVersion && verLt(S.backendVersion, NEED_BACKEND) ? `<div class="banner" style="background:var(--badbg);border-color:#f2a7a7;color:var(--bad)">⚠ <span class="grow">Backend is v${esc(S.backendVersion)} — this app needs v${NEED_BACKEND}. ${canResolve() ? 'Paste the latest Code.gs, run <b>setupSheets</b>, then Deploy → Manage deployments → ✏️ → <b>New version</b>.' : 'Please tell your admin.'}</span></div>` : ''}
+  ${publishBanner(f.date, r.shift)}
 
+  <div class="card hero" style="margin-top:12px">
+   <div class="hero-l">${r.audited ? ring(r.healthyPct, lvl) : ring(0, 'none')}
+    <div class="stchip st-${lvl}"><span class="dot"></span>${r.audited ? LVL_TXT[lvl] : 'No audit yet'}</div>
+    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs ${esc(prev.shift)} ${esc(fmtDate(prev.date))}` : ''}</div></div>
+   <div class="hero-r">
+    ${tile('📋', 'Audited', `${r.audited}<small>/${r.totalDvr}</small>`, r.pending ? `${r.pending} DVR${r.pending > 1 ? 's' : ''} pending` : 'All DVRs checked', r.pending ? (r.coverage >= 70 ? 'warn' : 'crit') : 'good', `<div class="mbar"><i style="width:${r.coverage}%"></i></div>`)}
+    ${tile('🖥', 'DVRs online', `${r.online}<small>/${r.audited}</small>`, r.offline ? `${r.offline} offline` : 'All online', r.offline ? 'crit' : r.audited ? 'good' : 'none')}
+    ${tile('📷', 'Cameras live', `${r.live}<small>/${r.camsAudited}</small>`, `${r.livePct}% · ${r.notLive} not live`, r.audited ? healthLevel(r.livePct) : 'none')}
+    ${tile('⏺', 'Recording', r.pbErrDvr ? `${r.pbErrCams}<small> cams</small>` : '✓', r.pbErrDvr ? `not recording at ${r.pbErrDvr} DVR${r.pbErrDvr > 1 ? 's' : ''}` : r.pbNotChecked ? `${r.pbNotChecked} DVR not verified` : 'All recording', r.pbErrDvr ? 'crit' : r.pbNotChecked ? 'warn' : r.audited ? 'good' : 'none')}
+   </div></div>
+
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Needs action</h3><a href="#" class="small" data-act="go" data-v="exceptions">All exceptions →</a></div>
+   ${chips.length ? `<div class="chiprow">${chips.map(([n, i, l, c, a]) => `<button class="achip ${c}" ${a}><span>${i}</span><b>${n}</b>${l}</button>`).join('')}</div>` : '<div class="okline">✔ Nothing needs action right now.</div>'}
+   ${top.length ? `<div class="toplist">${top.map(x => { const cl = camLabel(x['DVR Code'], x['Camera No']); return `<div class="trow" data-act="alert-go" data-exc="${esc(x['Exception ID'])}">
+     <span class="sev s-${esc(x.Severity)}">${x.Severity === 'Critical' ? '✕' : x.Severity === 'High' ? '!' : '•'}</span>
+     <div class="grow"><b>${esc(x['Outlet Name'])}</b> <span class="muted">${esc(x.Level === 'Camera' ? 'Cam ' + x['Camera No'] + (cl ? ' · ' + cl : '') : x.Level === 'Playback' ? 'Recording' : 'DVR')}</span><div class="small muted">${esc(x.Issue)}</div></div>
+     <span class="pill ${slaBreached(x) ? 'p-bad' : 'p-mute'}">${esc(daysLabel(x))}</span>${x['Ticket ID'] ? `<span class="pill p-info">${esc(x['Ticket ID'])}</span>` : '<span class="pill p-bad">No ticket</span>'}</div>`; }).join('')}</div>` : ''}
+  </div>
+
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Site map — every DVR at a glance</h3><span class="small muted">${canAudit() ? 'Tap a tile to open it' : 'Hover a tile for details'}</span></div>${siteMap(r, live)}</div>
+
+  <div class="two" style="margin-top:12px">
+   <div class="card"><h3>Fully healthy — last 14 days</h3>${trendLine(f, r.devs)}</div>
+   <div class="card"><h3>What's failing</h3>${issueTypes(live)}${live.length ? `<h3 style="margin-top:14px">How long open</h3>${ageBar(live)}` : ''}</div>
+  </div>
+
+  <div class="kgrid" style="margin-top:12px">
+   <div class="mk"><span>⏱</span><b>${mttr === null ? '—' : mttr < 48 ? Math.round(mttr) + 'h' : (Math.round(mttr / 24 * 10) / 10) + 'd'}</b><small>Avg time to fix (7 days)</small></div>
+   <div class="mk"><span>🎫</span><b>${cov}%</b><small>Issues with Fix Engine ticket</small></div>
+   <div class="mk"><span>✅</span><b>${res7.length}</b><small>Issues closed (7 days)</small></div>
+   <div class="mk"><span>🔁</span><b>${ro.length}</b><small>Repeat-failure sites (${esc(setting('Repeat Window Days', 30))}d)</small></div>
+  </div>
+
+  <details class="more card" style="margin-top:12px"><summary>📄 More details — alerts list, city summary, all KPIs, outlet-wise table, auditors</summary>
   ${alerts.length ? `<div class="card alerts" style="margin-top:12px"><h3 style="color:var(--bad)">🚨 Critical issues & alerts (${alerts.length})</h3>
    ${alerts.slice(0, 14).map(a => `<div class="alert"><span class="pill ${a.lvl === 'Critical' ? 'p-bad' : a.lvl === 'High' ? 'p-warn' : 'p-info'}">${a.lvl}</span><div class="grow"><div class="t">${esc(a.title)}</div><div class="small muted">${esc(a.sub || '')}</div></div>${a.exc || a.code || a.go ? `<button class="btn sm" data-act="alert-go" data-exc="${esc(a.exc || '')}" data-code="${esc(a.code || '')}" data-go="${esc(a.go || '')}">View</button>` : ''}</div>`).join('')}
    ${alerts.length > 14 ? `<div class="small muted">+ ${alerts.length - 14} more</div>` : ''}</div>`
    : `<div class="card" style="margin-top:12px;border-left:4px solid var(--ok)"><b style="color:var(--ok)">✔ No critical issues</b> <span class="muted">for this selection.</span></div>`}
-
-  ${S.mode === 'live' && S.backendVersion && verLt(S.backendVersion, NEED_BACKEND) ? `<div class="banner" style="background:var(--badbg);border-color:#f2a7a7;color:var(--bad)">⚠ <span class="grow">Backend is v${esc(S.backendVersion)} — this app needs v${NEED_BACKEND}. ${canResolve() ? 'Paste the latest Code.gs, run <b>setupSheets</b>, then Deploy → Manage deployments → ✏️ → <b>New version</b>.' : 'Please tell your admin.'}</span></div>` : ''}
-  ${publishBanner(f.date, r.shift)}
   ${(() => { const sn = buildSnapshot(f.date, r.shift); return `<div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">City summary — ${esc(r.shift)}</h3><a href="#" class="small" data-act="go" data-v="report">Full report →</a></div>
     <div class="tbl-wrap" style="margin-top:8px;max-height:none"><table><thead><tr><th></th>${sn.cities.map(c => `<th class="n">${esc(c)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${sn.rows.map(rw => `<tr><td><b>${esc(rw.label)}</b></td>${sn.cities.map(c => `<td class="n">${esc(rw.values[c])}</td>`).join('')}<td class="n"><b>${esc(rw.values.Total)}</b></td></tr>`).join('')}</tbody></table></div></div>`; })()}
   <div class="kpis">
@@ -602,21 +767,19 @@ function viewDashboard() {
    ${k(r.livePct >= 95 ? 'ok' : r.livePct >= 80 ? 'warn' : 'bad', 'Camera live count', r.live, `${r.livePct}% live · ${r.notLive} not live`)}
    ${k(r.pbErrDvr ? 'bad' : 'ok', 'Playback error count', r.pbErrDvr, `DVRs · ${r.pbErrCams} cameras not recording${r.pbNotChecked ? ' · ' + r.pbNotChecked + ' not checked' : ''}`)}
    ${k(r.healthyPct >= 95 ? 'ok' : r.healthyPct >= 80 ? 'warn' : 'bad', 'Fully healthy cameras', r.healthy, `${r.healthyPct}% live AND recording`)}
-   ${k(act.filter(isLive).length ? 'warn' : 'ok', 'Open exceptions', act.filter(isLive).length, `${act.filter(x => isLive(x) && x.Severity === 'Critical').length} critical · ${act.filter(x => isLive(x) && !x['Ticket ID']).length} no ticket · ${act.length - act.filter(isLive).length} recovered`)}
-   ${k(act.filter(slaBreached).length ? 'bad' : 'ok', 'SLA breached', act.filter(slaBreached).length, 'open beyond allowed hours')}
+   ${k(live.length ? 'warn' : 'ok', 'Open exceptions', live.length, `${crit.length} critical · ${noT.length} no ticket · ${rv.length} recovered`)}
+   ${k(sla.length ? 'bad' : 'ok', 'SLA breached', sla.length, 'open beyond allowed hours')}
   </div>
-
   <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise report</h3><span class="small muted">Latest audit per DVR${canAudit() ? ' · tap a row to audit' : ''}</span></div>
    <div class="tbl-wrap" style="margin-top:8px">${reportTable(r)}</div></div>
-
   <div class="two" style="margin-top:12px">
-   <div class="card"><h3>Open exceptions by reason</h3>${reasonBars(act.filter(isLive))}</div>
-   <div class="card"><h3>Last 7 days — camera live % (bars) & playback errors</h3>${trendChart(f)}</div>
+   <div class="card"><h3>Open exceptions by reason</h3>${reasonBars(live)}</div>
+   <div class="card"><h3>Last 7 days — camera live % & playback errors</h3>${trendChart(f)}</div>
   </div>
   <div class="two" style="margin-top:12px">
    <div class="card"><h3>Oldest open exceptions</h3>${ageingList(act)}</div>
    <div class="card"><h3>Who audited (${esc(r.shift)})</h3>${auditorList(r)}</div>
-  </div>`;
+  </div></details>`;
 }
 function reportTable(r) {
   const cols = ['Type', 'Outlet', 'DVR Code', 'DVR Serial', 'Software', 'City', 'Audited', 'DVR Online', '# Cam', 'Cam Live', 'Playback', 'Healthy', 'Issues', 'Checked by', 'Time'];
@@ -1466,6 +1629,14 @@ const ACT = {
   'f-delimg': el => { S.draft.evidence.splice(+el.dataset.i, 1); saveDraft(); render(); },
   'f-submit': () => submitAudit(),
   'quick-ok': el => quickOk(el.dataset.code),
+  'dash-exc': el => { const [k, v] = el.dataset.f.split(':'); S.view = 'exceptions'; S.exc = {...S.exc, status: k === 'status' ? v : 'Active', sev: k === 'sev' ? v : 'All', q: ''}; render(); window.scrollTo(0, 0); },
+  tile: el => {
+    const code = el.dataset.code, live = S.data.exceptions.filter(x => isLive(x) && x['DVR Code'] === code);
+    const t = document.getElementById('tip'); if (t) t.remove();
+    if (live.length) { S.view = 'exceptions'; S.exc = {...S.exc, status: 'Active', sev: 'All', q: code}; render(); window.scrollTo(0, 0); return; }
+    if (canAudit() && !latestAudits(S.dash.date, computeReport(S.dash).shift)[code]) { S.aud.date = S.dash.date; S.aud.shift = computeReport(S.dash).shift; S.aud.started = true; openAudit(code); return; }
+    toast((devByCode(code) || {})['Outlet Name'] + ': all cameras live and recording ✓');
+  },
   'f-ts': el => { const box = el.parentNode, D = S.draft; D.tsAns = D.tsAns || {}; const k = box.dataset.ts; D.tsAns[k] = D.tsAns[k] || {}; const q = box.dataset.q; D.tsAns[k][q] = D.tsAns[k][q] === el.dataset.v ? '' : el.dataset.v; saveDraft(); render(); },
   'ts-edit': el => { const q = el.parentNode.dataset.q; S.tsEdit.ans[q] = S.tsEdit.ans[q] === el.dataset.v ? '' : el.dataset.v; renderTsEdit(); },
   'x-ts': (el, e) => { e.preventDefault(); openTsEdit(el.dataset.id); },
@@ -1521,6 +1692,13 @@ document.addEventListener('input', e => {
   }, 250);
 });
 document.addEventListener('toggle', e => { const g = e.target.dataset && e.target.dataset.guide; if (g && !e.target.open) LS.set('te_guide_' + g, 1); }, true);
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]'); let t = document.getElementById('tip');
+  if (!el) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('div'); t.id = 'tip'; document.body.appendChild(t); }
+  t.textContent = el.getAttribute('data-tip');
+  const b = el.getBoundingClientRect(); t.style.left = Math.min(window.innerWidth - 290, Math.max(8, b.left)) + 'px'; t.style.top = (b.bottom + 8 + t.offsetHeight > window.innerHeight ? b.top - t.offsetHeight - 8 : b.bottom + 8) + 'px';
+});
 document.addEventListener('focusin', e => { if (e.target.id === 'pastezone') e.target.classList.add('hot'); });
 document.addEventListener('focusout', e => { if (e.target.id === 'pastezone') e.target.classList.remove('hot'); });
 window.addEventListener('beforeunload', e => { if (S.draft && (S.draft.dvrOnline || S.draft.evidence.length)) { saveDraft(); } if (Object.keys(QUICK).length) { e.preventDefault(); e.returnValue = ''; } });
