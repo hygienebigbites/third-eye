@@ -254,6 +254,7 @@ details.more>summary{cursor:pointer;font-weight:700;color:var(--info)}
 .vw-err{color:#fff;text-align:center;font-size:15px;line-height:1.6}
 @media (max-width:700px){.story .sg-main>summary{flex-wrap:wrap}.story .sg-main>summary>.grow{flex:1 1 calc(100% - 40px)}.story .sg-main>summary>.st-nums{width:100%;padding-left:30px}.story .sg-main>summary>.st-nums .sc{flex:1}.story .st-result{flex-wrap:wrap}.story .st-nums .sc{min-width:48px;font-size:15px;padding:2px 5px}.story .sc small{font-size:9px}.story .st-note{font-size:12px}.story .sgs,.story .so{margin-left:8px}.vw-stage{padding:0 8px 12px}.vw-nav{width:36px;height:52px;background:rgba(0,0,0,.4)}}
 .hx-info{background:#3b82f6}.pipe{margin-top:4px}.pipe-leg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:stretch}.pipe-leg .ecs{min-width:120px}.own-row{gap:6px}
+.why-sel{width:100%;font-size:14px;padding:9px 10px;border-radius:8px}
 .why .chips button.on,.wsel button.on{background:#eaf1fe;border-color:#1d4fa8;color:#1d4fa8}
 .why{border:1px solid #cfdcf5;background:#f7faff;border-radius:10px;padding:10px;margin-top:8px}
 .why-h{font-size:13.5px;margin-bottom:6px}.why .chips button.unk{border-style:dashed}
@@ -1521,11 +1522,10 @@ function whyChips(x) {
 }
 function whySheet(id) {
   const x = S.data.exceptions.find(y => y['Exception ID'] === id); if (!x) return;
-  const R = reasonsFor(x.Level, x.Issue).map(r => r.Reason), opts = uniq([...(x.Reason && !R.includes(x.Reason) ? [x.Reason] : []), ...R, R_UNKNOWN]);
-  S.wx = {id, reason: x.Reason || '', owner: x.Owner || '', next: x['Next Action'] || '', note: ''};
+  S.wx = {id, reason: x.Reason || '', owner: x.Owner || '', next: x['Next Action'] || '', note: '', other: ''};
   const draw = () => { const W = S.wx; openLayer(`<div class="sheet"><h2>Reason &amp; owner — ${esc(x['Outlet Name'])}</h2><div class="muted small">${esc(x.Level === 'Camera' ? 'Cam ' + x['Camera No'] : x.Level)} · ${esc(x.Issue)}</div>
-    <div class="why-l">What did the site say?</div><div class="chips wsel">${opts.map(o => `<button type="button" class="${W.reason === o ? 'on' : ''}" data-act="wx-set" data-f="reason" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-    <input id="wx-other" placeholder="…or type another reason" value="${opts.includes(W.reason) ? '' : esc(W.reason)}" style="width:100%;margin-top:6px">
+    <div class="why-l">What did the site say?</div>${reasonSelect(x.Level, x.Issue, W.reason, 'id="wx-reason" data-change="wx-reason"')}
+    ${W.reason === R_OTHER ? '<input id="wx-other" placeholder="Type the reason the site gave *" style="width:100%;margin-top:6px">' : ''}
     <div class="why-l">Owner</div><div class="chips wsel">${ownerList().map(o => `<button type="button" class="${W.owner === o ? 'on' : ''}" data-act="wx-set" data-f="owner" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
     <div class="why-l">Next step</div><div class="chips wsel">${['Raise ticket', 'Owner will fix'].map(o => `<button type="button" class="${W.next === o ? 'on' : ''}" data-act="wx-set" data-f="next" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
     <input id="wx-note" placeholder="Note (optional)" style="width:100%;margin-top:8px">
@@ -1650,12 +1650,22 @@ function defaultOwner(level, issue, reason) {
   return L.find(o => io.toLowerCase().includes(o.toLowerCase())) || '';
 }
 const NEXT = {fixed: 'Fixed on call', ticket: 'Raise ticket', site: 'Owner will fix'};
+function reasonSelect(level, issue, val, attrs) {
+  const R = reasonsFor(level, issue), q = R.filter(r => yes(r['Fix On Call'])), o = R.filter(r => !yes(r['Fix On Call']));
+  const opt = v => `<option value="${esc(v)}" ${val === v ? 'selected' : ''}>${esc(v)}</option>`;
+  const known = new Set([...R.map(r => r.Reason), R_UNKNOWN, R_OTHER]);
+  return `<select class="why-sel" ${attrs}><option value="">— Select what the site said —</option>
+   ${q.length ? `<optgroup label="☎ Often fixed on the call">${q.map(r => opt(r.Reason)).join('')}</optgroup>` : ''}
+   ${o.length ? `<optgroup label="Needs the owner to fix">${o.map(r => opt(r.Reason)).join('')}</optgroup>` : ''}
+   <optgroup label="Other">${val && !known.has(val) ? opt(val) : ''}${opt(R_UNKNOWN)}${opt(R_OTHER)}</optgroup></select>
+   ${R.length ? '' : `<div class="small" style="color:var(--bad);margin-top:4px">⚠ No reasons loaded for this issue. ${canResolve() ? 'Paste the latest Code.gs, run <b>setupSheets</b> (creates the Reasons tab) and deploy a <b>New version</b>.' : 'Tell your admin: the Reasons tab is empty.'}</div>`}`;
+}
 function whyBlock(key, level, issue, sw, cam) {
   if (!issue || !reasonRequired()) return '';
   const w = (S.draft.why || {})[key] || {}, R = reasonsFor(level, issue), rr = R.find(r => r.Reason === w.reason);
   const opts = R.map(r => r.Reason).concat([R_UNKNOWN, R_OTHER]);
   return `<div class="why" data-why="${esc(key)}"><div class="why-h">📞 <b>Call the outlet — what did they say?</b> <span class="muted small">pick one *</span></div>
-   <div class="chips why-r">${opts.map(o => { const r = R.find(x => x.Reason === o); return `<button type="button" class="${w.reason === o ? 'on' : ''} ${o === R_UNKNOWN ? 'unk' : ''}" data-act="why-r" data-k="${esc(key)}" data-v="${esc(o)}">${esc(o)}${r && yes(r['Fix On Call']) ? '<span class="foc-tag">☎ fix on call</span>' : ''}</button>`; }).join('')}</div>
+   ${reasonSelect(level, issue, w.reason || '', `data-change="why-r" data-k="${esc(key)}"`)}${rr && yes(rr['Fix On Call']) ? '<span class="foc-tag" style="margin-top:4px">☎ often fixed on the call</span>' : ''}
    ${w.reason ? `${rr ? `<div class="why-hint">🛠 <b>Do:</b> ${esc(rr['Fix Hint'] || '')}${rr['How-To'] && guideFor(rr['How-To'], sw) ? ` <button type="button" class="ht-btn" data-act="howto" data-g="${esc(rr['How-To'])}" data-sw="${esc(sw)}" data-cam="${esc(cam || '')}">📖 How to</button>` : ''}</div>` : w.reason === R_UNKNOWN ? '<div class="why-hint">🔍 Site doesn\'t know — answer the troubleshooting questions below to find the cause.</div>' : ''}
     <div class="why-l">Owner — who fixes it? *</div><div class="chips">${ownerList().map(o => `<button type="button" class="${w.owner === o ? 'on' : ''}" data-act="why-o" data-k="${esc(key)}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
     <div class="why-l">Next step *</div><div class="why-out">
@@ -2156,13 +2166,13 @@ const ACT = {
   'rep-csv': () => reportCsv(),
   'undo-ok': el => undoQuick(el.dataset.code),
   'x-why': (el, e) => { e.preventDefault(); whySheet(el.dataset.id); },
-  'wx-set': el => { const o = $('#wx-other'); if (el.dataset.f === 'reason' && o) o.value = ''; S.wx[el.dataset.f] = S.wx[el.dataset.f] === el.dataset.v ? '' : el.dataset.v; const n = $('#wx-note') ? $('#wx-note').value : ''; S.wxDraw(); if ($('#wx-note')) $('#wx-note').value = n; },
-  'wx-save': () => { const W = S.wx, other = ($('#wx-other').value || '').trim(), reason = other || W.reason; if (!reason) return toast('Pick or type the reason', true); if (!W.owner) return toast('Pick the owner', true);
+  'wx-set': el => { S.wx[el.dataset.f] = S.wx[el.dataset.f] === el.dataset.v ? '' : el.dataset.v; const n = $('#wx-note') ? $('#wx-note').value : ''; S.wxDraw(); if ($('#wx-note')) $('#wx-note').value = n; },
+  'wx-save': () => { const W = S.wx, other = $('#wx-other') ? $('#wx-other').value.trim() : '', reason = W.reason === R_OTHER ? other : W.reason; if (!reason) return toast(W.reason === R_OTHER ? 'Type the reason the site gave' : 'Select the reason', true); if (!W.owner) return toast('Pick the owner', true);
     const nt = ($('#wx-note').value || '').trim(); closeLayer(); updExc(W.id, {reason, owner: W.owner, nextAction: W.next, note: nt || undefined, status: W.next === 'Owner will fix' && (S.data.exceptions.find(y => y['Exception ID'] === W.id) || {}).Status === 'Open' ? 'In Progress' : undefined}, 'Reason & owner saved'); },
-  'wx-fixed': () => { const W = S.wx, other = ($('#wx-other').value || '').trim(), reason = other || W.reason; if (!reason || reason === R_UNKNOWN) return toast('Pick what fixed it (reason) first', true);
+  'wx-fixed': () => { const W = S.wx, other = $('#wx-other') ? $('#wx-other').value.trim() : '', reason = W.reason === R_OTHER ? other : W.reason; if (!reason || reason === R_UNKNOWN) return toast('Pick what fixed it (reason) first', true);
     const nt = ($('#wx-note').value || '').trim(); closeLayer(); updExc(W.id, {status: 'Resolved', reason, owner: W.owner, nextAction: 'Fixed on call', rootCause: reason, actionTaken: 'Fixed on call' + (nt ? ': ' + nt : '')}, 'Closed as fixed ✔'); },
   'why-r': el => { const D = S.draft, k = el.dataset.k; D.why = D.why || {}; const w = D.why[k] || (D.why[k] = {}); const f = draftFailures(D).find(x => x.key === k);
-    w.reason = w.reason === el.dataset.v ? '' : el.dataset.v; if (w.reason && f) w.owner = defaultOwner(f.level, f.issue, w.reason) || w.owner || ''; if (w.reason === R_UNKNOWN && w.outcome === 'fixed') w.outcome = ''; saveDraft(); render(); },
+    w.reason = el.value; if (w.reason && f) w.owner = defaultOwner(f.level, f.issue, w.reason) || w.owner || ''; if (w.reason === R_UNKNOWN && w.outcome === 'fixed') w.outcome = ''; saveDraft(); render(); },
   'why-o': el => { const D = S.draft, w = (D.why = D.why || {})[el.dataset.k] || (D.why[el.dataset.k] = {}); w.owner = el.dataset.v; saveDraft(); render(); },
   'why-x': el => { const D = S.draft, w = (D.why = D.why || {})[el.dataset.k] || (D.why[el.dataset.k] = {}); w.outcome = el.dataset.v; saveDraft(); render(); },
   'why-fix': el => {
@@ -2216,6 +2226,8 @@ document.addEventListener('change', e => {
   else if (k === 'f-camissue') { S.draft.camIssues[el.dataset.n] = el.value; saveDraft(); render(); }
   else if (k === 'f-pbissue') { S.draft.playbackIssue = el.value; saveDraft(); render(); }
   else if (k === 'f-file') { addImages(el.files); el.value = ''; }
+  else if (k === 'why-r') ACT['why-r'](el);
+  else if (k === 'wx-reason') { S.wx.reason = el.value; const n = $('#wx-note') ? $('#wx-note').value : ''; S.wxDraw(); if ($('#wx-note')) $('#wx-note').value = n; }
 });
 let qTimer;
 document.addEventListener('input', e => {
