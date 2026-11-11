@@ -1390,6 +1390,65 @@ function openAudit(code) {
   S.view = 'audit-form'; render(); window.scrollTo(0, 0);
   if (saved) toast('Unsaved draft restored');
 }
+/* A screenshot is needed for every audit (switch off with Settings → Evidence Required = N) */
+const evidenceAlways = () => yes(setting('Evidence Required', 'Y'));
+const toEvidence = () => setTimeout(() => { const e = $('#step-ev'); if (e) e.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 60);
+/* "All OK" now opens the form already filled as OK, so the auditor only adds the screenshot and submits */
+function openAuditOk(code) {
+  openAudit(code); const D = S.draft; if (!D || D.dvrCode !== code) return;
+  if (D.dvrOnline === null) { D.dvrOnline = 'Y'; D.playback = 'OK'; saveDraft(); render(); }
+  toEvidence(); toast('Marked All OK — add the screenshot, then Submit');
+}
+/* ----- "Same problem as last time?" — copy the last audit's findings into today's form ----- */
+function prevProblemAudit(code, date, shift) {
+  const a = S.data.audits.filter(x => x['DVR Code'] === code && !x._pending && !(x.Date === date && x.Shift === shift) && String(x.Date) <= String(date))
+    .sort((x, y) => String(y['Submitted At']).localeCompare(String(x['Submitted At'])))[0];
+  if (!a) return null;
+  const bad = a['DVR Online'] !== 'Y' || num(a['Cameras Live']) < num(a['Cameras Installed']) || a.Playback === 'Error';
+  return bad ? a : null;
+}
+function prevProblemList(a) {
+  if (a['DVR Online'] !== 'Y') return ['DVR offline — ' + (a['DVR Issue'] || 'reason not given')];
+  const L = String(a['Camera Issues'] || '').split(';').map(x => x.trim()).filter(Boolean);
+  if (!L.length && a['Not Live Cameras']) L.push('Cam ' + a['Not Live Cameras'] + ' not live');
+  if (a.Playback === 'Error') L.push('Playback ' + (a['Playback Cameras'] === 'ALL' ? '(all cameras)' : 'Cam ' + a['Playback Cameras']) + ' — ' + (a['Playback Issue'] || 'error'));
+  return L;
+}
+function applySame() {
+  const D = S.draft, a = prevProblemAudit(D.dvrCode, D.date, D.shift); if (!a) return;
+  const nums = s => String(s || '').split(',').map(x => num(x.trim())).filter(Boolean);
+  D.dvrIssue = ''; D.notLive = []; D.camIssues = {}; D.playback = null; D.playbackIssue = ''; D.playbackCams = []; D.why = {}; D.tsAns = {};
+  if (a['DVR Online'] !== 'Y') { D.dvrOnline = 'N'; D.dvrIssue = a['DVR Issue'] || ''; }
+  else {
+    D.dvrOnline = 'Y'; D.notLive = nums(a['Not Live Cameras']);
+    String(a['Camera Issues'] || '').split(';').forEach(x => { const m = x.trim().match(/^Cam\s*(\d+)\s*:\s*(.+)$/); if (m && D.notLive.includes(num(m[1]))) D.camIssues[num(m[1])] = m[2].trim(); });
+    if (a.Playback === 'OK' || a.Playback === 'Error') D.playback = a.Playback;      // "Couldn't check" is not copied — check it today
+    if (a.Playback === 'Error') { D.playbackIssue = a['Playback Issue'] || ''; D.playbackCams = a['Playback Cameras'] === 'ALL' ? 'ALL' : nums(a['Playback Cameras']); }
+  }
+  // what the site said, the owner and the next step — taken from the issue that is still open
+  const E = S.data.exceptions.filter(x => x['DVR Code'] === D.dvrCode && x.Status !== 'Resolved');
+  const nextKey = x => x['Ticket ID'] || x['Next Action'] === NEXT.ticket ? 'ticket' : x['Next Action'] === NEXT.site ? 'site' : '';
+  const said = {}; String(a.Reasons || '').split('|').forEach(s => { const i = s.indexOf(':'); if (i > 0) said[s.slice(0, i).trim()] = s.slice(i + 1).trim(); });
+  draftFailures(D).forEach(f => {
+    const x = E.find(e => e.Level === f.level && e.Issue === f.issue && (f.level !== 'Camera' || 'cam:' + num(e['Camera No']) === f.key));
+    const sm = String(said[f.label] || '').match(/^(.*?)(?:\s*\(([^()]+)\))?$/) || [];    // last audit recorded "reason (owner)"
+    const reason = (x && x.Reason) || sm[1];
+    if (reason) D.why[f.key] = {reason, owner: (x && x.Owner) || sm[2] || defaultOwner(f.level, f.issue, reason), outcome: x ? nextKey(x) : '', note: ''};
+  });
+  const tag = `Same as last audit (${fmtDate(a.Date)} ${a.Shift})`;
+  if (!String(D.remarks || '').includes('Same as last audit')) D.remarks = D.remarks ? D.remarks + ' · ' + tag : tag;
+  D._same = true; saveDraft(); render(); toEvidence();
+  const miss = validateDraft({...D, evidence: [{}]});
+  toast(miss ? 'Filled from last audit. Still needed → ' + miss : 'Filled from last audit — add today\'s screenshot, then Submit');
+}
+function samePrompt(D) {
+  if (D._same) return `<div class="hint" style="background:var(--okbg);color:var(--ok)">🔁 <b>Filled from the last audit.</b> Check it is still correct, add today's screenshot, then Submit.</div>`;
+  if (D._sameNo || D.dvrOnline !== null) return '';
+  const a = prevProblemAudit(D.dvrCode, D.date, D.shift); if (!a) return '';
+  return `<div class="hint" style="border:1px solid #f1d38a"><b>🔁 Same problem as last time?</b> <span class="muted">Last audit · ${esc(fmtDate(a.Date))} ${esc(a.Shift)}</span>
+   <ul style="margin:6px 0 8px 18px;padding:0">${prevProblemList(a).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+   <div class="choice"><button class="g" data-act="same-yes">✅ Yes, same — fill it for me</button><button class="a" data-act="same-no">No, something changed</button></div></div>`;
+}
 /* ----- evidence tiles (Drive thumbnails; click opens Drive) ----- */
 function driveId(u) { const m = String(u).match(/\/d\/([\w-]{10,})/) || String(u).match(/[?&]id=([\w-]{10,})/); return m ? m[1] : null; }
 function openViewer(list, i) {
@@ -1446,6 +1505,7 @@ function viewAuditForm() {
   <div class="card" style="margin-top:10px"><div class="row"><div class="grow"><h2 style="margin:0">${esc(dev['Outlet Name'])}</h2>
    <div class="small muted">${esc(dev['DVR Code'])} · S/N ${esc(dev['DVR Serial No'])} · ${esc(dev.Type)} · ${esc(dev.City)} · <b>${inst} cameras</b></div></div>
    <span class="pill sw-${esc(dev.Software)}" style="font-size:13px">${esc(dev.Software)}</span></div>
+   ${samePrompt(D)}
    ${historyPanel(dev, D)}
    ${D._prev ? `<div class="hint">ℹ Already audited this shift by ${esc(D._prev['Auditor Name'])} at ${fmtTime(D._prev['Submitted At'])}. Submitting again saves a <b>re-audit</b> (latest one counts).</div>` : ''}
   </div>
@@ -1477,7 +1537,7 @@ function viewAuditForm() {
   </div></div>
   ${focCard(D)}
 
-  <div class="step"><div class="hd"><div class="no ${D.evidence.length ? 'ok' : ''}">4</div><b class="grow">Screenshot evidence</b><span class="small muted">${fails.length ? (yes(setting('Evidence Required', 'Y')) ? 'required' : 'recommended') : 'optional'}</span></div><div class="bd">
+  <div class="step" id="step-ev"><div class="hd"><div class="no ${D.evidence.length ? 'ok' : ''}">4</div><b class="grow">Screenshot evidence</b><span class="small ${evidenceAlways() && !D.evidence.length ? '' : 'muted'}" ${evidenceAlways() && !D.evidence.length ? 'style="color:var(--bad);font-weight:700"' : ''}>${evidenceAlways() ? 'required for every audit' : fails.length ? 'recommended' : 'optional'}</span></div><div class="bd">
    <div class="paste" tabindex="0" id="pastezone">📋 <b>Win + Shift + S</b> → select the grid → <b>Ctrl + V</b> anywhere on this page.<br><span class="small muted">(Mac: Cmd + Ctrl + Shift + 4, then Cmd + V)</span></div>
    <div class="row" style="margin-top:8px"><label class="btn sm">📁 Upload / take photo<input type="file" accept="image/*" multiple hidden data-change="f-file"></label><span class="small muted">Max 6 images · auto-compressed</span></div>
    <div class="thumbs">${D.evidence.map((e, i) => `<div class="thumb"><img src="${e.data}" alt="evidence ${i + 1}"><button data-act="f-delimg" data-i="${i}" title="Remove">✕</button></div>`).join('')}</div>
@@ -1517,13 +1577,13 @@ function validateDraft(D) {
     const dev = devByCode(D.dvrCode);
     for (const f of draftFailures(D)) { if (!tsNeeded(D, f.key)) continue; const qs = tsQs(f.level, f.issue, dev.Software), ev = tsEval(qs, (D.tsAns || {})[f.key]); if (ev.answered < ev.total) return `Troubleshoot ${f.label}: answer all ${ev.total} questions (${ev.answered} done).`; }
   }
-  if (summariseDraft(D).length && yes(setting('Evidence Required', 'Y')) && !D.evidence.length) return 'Step 4: paste or upload at least one screenshot as evidence.';
+  if (evidenceAlways() && !D.evidence.length) return 'Step 4: add a screenshot — it is needed for every audit.';
   return null;
 }
 async function submitAudit() {
   const D = S.draft, err = validateDraft(D);
   if (err) return toast(err, true);
-  const {_prev, _oc, evidence, tsAns, ...audit} = D;
+  const {_prev, _oc, _same, _sameNo, evidence, tsAns, ...audit} = D;
   const devX = devByCode(D.dvrCode); audit.ts = {}; audit.diag = {};
   draftFailures(D).forEach(f => { const ev = tsEval(tsQs(f.level, f.issue, devX.Software), (tsAns || {})[f.key]); if (ev.text) { audit.ts[f.key] = ev.text; audit.diag[f.key] = ev.findings.join(' ; '); } });
   audit.why = {}; draftFailures(D).forEach(f => { const w = (D.why || {})[f.key]; if (w && w.reason) audit.why[f.key] = {reason: w.reason === R_OTHER ? (w.note || R_OTHER) : w.reason, owner: w.owner || '', outcome: w.outcome || '', note: w.reason === R_OTHER ? '' : (w.note || '')}; });
@@ -2201,7 +2261,7 @@ function viewGuide() {
    <li><b>Step 1:</b> open live view and mark the DVR <b>Online</b> or <b>Offline</b> (pick the reason if offline).</li>
    <li><b>Step 2:</b> every camera starts green. Tap only cameras with no or poor picture and choose the issue.</li>
    <li><b>Step 3:</b> play back ${esc(setting('Playback Check Time', 'yesterday 11:00 AM'))} on one camera. A DVR can be online and live but <b>not recording</b> — this step catches it.</li>
-   <li><b>Step 4:</b> take a screenshot (<b>Win + Shift + S</b>), click the paste box and press <b>Ctrl + V</b> — or upload a photo on mobile. Mandatory when there is an issue.</li>
+   <li><b>Step 4:</b> take a screenshot (<b>Win + Shift + S</b>), click the paste box and press <b>Ctrl + V</b> — or upload a photo on mobile. <b>Mandatory for every audit</b>, even when everything is OK.</li>
    <li><b>Submit</b> → tap <b>Next</b> to move to the next pending DVR.</li>
    <li>For each new exception: <b>Exceptions → Copy Fix Engine ticket text</b> → raise the ticket in Fix Engine → paste the <b>ticket ID</b> back.</li>
    <li>When a camera is found working in a later audit, it moves to <b>Recovered – Verify</b>. A Supervisor resolves it with the root cause.</li></ol></div>
@@ -2263,7 +2323,9 @@ const ACT = {
   'f-pbcam': el => { const n = +el.dataset.n, D = S.draft; if (D.playbackCams === 'ALL') D.playbackCams = []; D.playbackCams = D.playbackCams.includes(n) ? D.playbackCams.filter(x => x !== n) : [...D.playbackCams, n].sort((a, b) => a - b); saveDraft(); render(); },
   'f-delimg': el => { S.draft.evidence.splice(+el.dataset.i, 1); saveDraft(); render(); },
   'f-submit': () => submitAudit(),
-  'quick-ok': el => quickOk(el.dataset.code),
+  'quick-ok': el => evidenceAlways() ? openAuditOk(el.dataset.code) : quickOk(el.dataset.code),
+  'same-yes': () => applySame(),
+  'same-no': () => { S.draft._sameNo = true; render(); },
   'sync-open': () => openSyncSheet(),
   'q-retry': el => { const it = Q.items.find(i => i.qid === el.dataset.q); if (it) { it.status = 'pending'; it.error = ''; qSave(); runQueue(); syncUi(); } },
   'q-retryall': () => { Q.items.forEach(i => { if (i.status !== 'sending') i.status = 'pending'; }); Q.offline = false; qSave(); runQueue(); syncUi(); },
