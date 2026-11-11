@@ -404,7 +404,7 @@ const S = {
   cfg: {devices: [], cameras: [], issues: [], settings: {}, users: []},
   data: {audits: [], exceptions: []},
   view: 'dashboard', lastSync: 0, busy: false,
-  dash: {date: todayStr(), shift: 'AUTO', city: 'All', type: 'All', sw: 'All'},
+  dash: {range: 'today', from: todayStr(), to: todayStr(), date: todayStr(), shift: 'AUTO', city: 'All', type: 'All', sw: 'All'},
   aud: {date: todayStr(), shift: null, filter: 'Pending', q: '', city: 'All', sw: 'All'},
   exc: {status: 'Active', sev: 'All', level: 'All', city: 'All', q: ''},
   draft: null
@@ -760,8 +760,12 @@ function siteMap(r, liveExc) {
    }).join('')}`;
 }
 function trendLine(f, devs) {
-  const tgt = num(setting('Target Healthy %', 98)) || 98, days = [];
+  const days = [];
   for (let i = 13; i >= 0; i--) { const d = addDays(f.date, -i), st = scopeStats(devs, latestAudits(d, 'All'), d); days.push({d, v: st.camsAudited ? st.healthyPct : null}); }
+  return lineChart(days);
+}
+function lineChart(days) {
+  const tgt = num(setting('Target Healthy %', 98)) || 98, step = Math.max(1, Math.ceil(days.length / 7));
   const pts = days.filter(x => x.v !== null);
   if (pts.length < 2) return '<div class="empty small">Trend appears after 2 days of audits.</div>';
   const W = 560, H = 170, L = 34, R = 78, T = 12, B = 26, lo = Math.max(0, Math.floor(Math.min(tgt, ...pts.map(p => p.v)) / 5) * 5 - 5), hi = 100;
@@ -770,12 +774,12 @@ function trendLine(f, devs) {
   days.forEach((p, i) => { if (p.v === null) { started = false; return; } path += (started ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); started = true; });
   const last = days.map((p, i) => ({...p, i})).filter(p => p.v !== null).slice(-1)[0];
   const grid = [lo, Math.round((lo + hi) / 2), hi].map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e1e0d9" stroke-width="1"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10.5" fill="#7b8899">${v}%</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-height:200px" role="img" aria-label="Fully healthy % over the last 14 days">${grid}
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-height:200px" role="img" aria-label="Fully healthy % day by day">${grid}
    <line x1="${L}" x2="${W - R}" y1="${Y(tgt)}" y2="${Y(tgt)}" stroke="#0ca30c" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W - R + 4}" y="${Y(tgt) + 4}" font-size="10.5" fill="#006300">target ${tgt}%</text>
    <path d="${path}" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-linejoin="round"/>
    ${days.map((p, i) => p.v === null ? '' : `<circle cx="${X(i)}" cy="${Y(p.v)}" r="4.5" fill="${STC[healthLevel(p.v)]}" stroke="#fff" stroke-width="2"/><circle cx="${X(i)}" cy="${Y(p.v)}" r="13" fill="transparent" data-tip="${esc(fmtDate(p.d) + ': ' + p.v + '% fully healthy')}"/>`).join('')}
    <text x="${X(last.i) + 8}" y="${Y(last.v) - 8}" font-size="12" font-weight="700" fill="#152033">${last.v}%</text>
-   ${days.map((p, i) => i % 2 === 1 ? '' : `<text x="${X(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="${p.v === null ? '#b8bec8' : '#7b8899'}">${esc(new Date(p.d + 'T00:00:00').toLocaleDateString('en-IN', {day: '2-digit', month: 'short'}))}</text>`).join('')}</svg>
+   ${days.map((p, i) => i % step ? '' : `<text x="${X(i)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="${p.v === null ? '#b8bec8' : '#7b8899'}">${esc(new Date(p.d + 'T00:00:00').toLocaleDateString('en-IN', {day: '2-digit', month: 'short'}))}</text>`).join('')}</svg>
    <div class="small muted">Dots: <span style="color:#0ca30c">●</span> on target · <span style="color:#d29a00">●</span> below · <span style="color:#d03b3b">●</span> needs attention. Gaps = no audit that day.</div>`;
 }
 function issueTypes(live) {
@@ -866,8 +870,97 @@ function issueStory(r) {
    ${r.pending ? `<div class="small" style="margin-top:6px;color:var(--warn)">📋 ${r.pending} DVR${r.pending > 1 ? 's' : ''} not audited yet — not included above.</div>` : ''}
    ${r.pbErrCams > T.rec ? `<div class="small muted" style="margin-top:6px">Note: the Recording tile shows ${r.pbErrCams} cameras with a playback error; ${r.pbErrCams - T.rec} of them are already counted above as offline / not live, so they are not counted twice here.</div>` : ''}</div>`;
 }
+/* ---- Dashboard period: today / yesterday / this week / last week / this month / last month / custom ---- */
+const RANGES = [['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['lastweek', 'Last week'], ['month', 'This month'], ['lastmonth', 'Last month'], ['custom', 'Custom dates']];
+function dashSpan(f) {
+  const t = todayStr(), d = new Date(t + 'T00:00:00'), dow = (d.getDay() + 6) % 7;  // week starts Monday
+  let from = t, to = t;
+  if (f.range === 'yesterday') from = to = addDays(t, -1);
+  else if (f.range === 'week') from = addDays(t, -dow);
+  else if (f.range === 'lastweek') { from = addDays(t, -dow - 7); to = addDays(t, -dow - 1); }
+  else if (f.range === 'month') from = ymd(new Date(d.getFullYear(), d.getMonth(), 1));
+  else if (f.range === 'lastmonth') { from = ymd(new Date(d.getFullYear(), d.getMonth() - 1, 1)); to = ymd(new Date(d.getFullYear(), d.getMonth(), 0)); }
+  else if (f.range === 'custom') { from = f.from || t; to = f.to || t; if (from > to) [from, to] = [to, from]; if (to > t) to = t; if (from > t) from = t; }
+  const n = Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 864e5) + 1;
+  const name = (RANGES.find(x => x[0] === f.range) || RANGES[0])[1];
+  return {from, to, n, multi: from !== to, name, label: from === to ? fmtDate(to) : fmtDate(from) + ' – ' + fmtDate(to)};
+}
+/* Adds up every day in the period. Per day, each DVR counts once (its latest audit that day, or of the chosen shift). */
+function periodAgg(f, from, to) {
+  const devs = filterDevices(f), codes = new Set(devs.map(d => d['DVR Code']));
+  const shift = f.shift === 'AUTO' || f.shift === 'All' ? null : f.shift;
+  const byDay = {};
+  S.trend.audits.forEach(a => { if (a[0] < from || a[0] > to || !codes.has(a[2]) || (shift && a[1] !== shift)) return;
+    const D = byDay[a[0]] || (byDay[a[0]] = {}); if (!D[a[2]] || String(a[9]) > String(D[a[2]][9])) D[a[2]] = a; });
+  const Z = () => ({audited: 0, online: 0, cams: 0, live: 0, healthy: 0, pb: 0, off: 0, nl: 0, nr: 0});
+  const T = Z(), days = [], out = {};
+  devs.forEach(d => out[d['DVR Code']] = {d, ...Z()});
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const s = Z();
+    Object.values(byDay[d] || {}).forEach(a => {
+      const inst = num(a[5]), live = num(a[6]), hl = num(a[8]), on = a[4] === 'Y';
+      [s, out[a[2]]].forEach(x => { x.audited++; if (on) x.online++; x.cams += inst; x.live += live; x.healthy += hl; if (a[7] === 'Error') x.pb++;
+        if (!on) x.off += inst; else { x.nl += Math.max(0, inst - live); x.nr += Math.max(0, live - hl); } });
+    });
+    Object.keys(s).forEach(k => T[k] += s[k]);
+    days.push({d, ...s, v: s.cams ? pct(s.healthy, s.cams) : null});
+  }
+  const exc = (S.trend.exc || []).filter(x => f.city === 'All' || x[1] === f.city), inR = v => v && v >= from && v <= to;
+  return {devs, days, T, outlets: Object.values(out), n: days.length, auditedDays: days.filter(x => x.audited).length, expected: devs.length * days.length,
+    healthyPct: pct(T.healthy, T.cams), livePct: pct(T.live, T.cams), onlinePct: pct(T.online, T.audited), coverage: pct(T.audited, devs.length * days.length),
+    newExc: exc.filter(x => inR(x[0])).length, tickets: exc.filter(x => inR(x[2])).length};
+}
+function periodBody(f, sp) {
+  if (!S.trend) { loadTrend(); return `<div class="card" style="margin-top:12px"><div class="row"><div class="spinner dark"></div><span>Loading data for ${esc(sp.label)}…</span></div></div>`; }
+  const A = periodAgg(f, sp.from, sp.to), T = A.T, tgt = num(setting('Target Healthy %', 98)) || 98;
+  if (!T.audited) return `${S.trend.err ? `<div class="hint">Could not load: ${esc(S.trend.err)}</div>` : ''}<div class="card" style="margin-top:12px"><div class="empty">No audits found between ${esc(fmtDate(sp.from))} and ${esc(fmtDate(sp.to))}.</div></div>`;
+  const lvl = healthLevel(A.healthyPct);
+  const P = periodAgg(f, addDays(sp.from, -sp.n), addDays(sp.from, -1)), dh = P.T.cams ? Math.round((A.healthyPct - P.healthyPct) * 10) / 10 : null;
+  const tile = (icon, label, big, sub, st, extra = '') => `<div class="ht ht-${st}"><div class="ht-h"><span class="ht-i">${icon}</span>${label}<span class="ht-dot" title="${st}"></span></div><div class="ht-v">${big}</div>${extra}<div class="ht-s">${sub}</div></div>`;
+  const perDay = v => Math.round(v / Math.max(1, A.auditedDays) * 10) / 10, offN = T.audited - T.online;
+  const seg = [['good', T.healthy, 'Healthy', 'live + recording'], ['warn', T.nr, 'Not recording', 'live but no footage'], ['serious', T.nl, 'Not live', 'camera problem'], ['crit', T.off, 'DVR offline', 'all its cameras blind']];
+  const did = A.days.filter(x => x.v !== null), best = did.reduce((a, b) => b.v > a.v ? b : a), worst = did.reduce((a, b) => b.v < a.v ? b : a);
+  const scoped = f.type !== 'All' || f.sw !== 'All';
+  const rows = A.outlets.slice().sort((a, b) => (a.audited ? pct(a.healthy, a.cams) : 101) - (b.audited ? pct(b.healthy, b.cams) : 101) || String(a.d['Outlet Name']).localeCompare(b.d['Outlet Name']));
+  const pc = (v, good, warn) => `<b style="color:${v >= good ? 'var(--ok)' : v >= warn ? 'var(--warn)' : 'var(--bad)'}">${v}%</b>`;
+  return `${S.trend.err ? `<div class="hint">Could not load: ${esc(S.trend.err)}</div>` : ''}
+  <div class="card hero" style="margin-top:12px">
+   <div class="hero-l">${ring(A.healthyPct, lvl)}
+    <div class="small" style="text-align:center;margin-top:-2px">Average over <b>${A.auditedDays}</b> audited day${A.auditedDays > 1 ? 's' : ''}</div>
+    <div class="stchip st-${lvl}"><span class="dot"></span>${LVL_TXT[lvl]}</div>
+    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs the ${sp.n} days before` : ''}</div></div>
+   <div class="hero-r">
+    ${tile('📋', 'Checks done', `${A.coverage}<small>%</small>`, `${T.audited} of ${A.expected} DVR checks · ${A.auditedDays}/${A.n} days`, A.coverage >= 98 ? 'good' : A.coverage >= 85 ? 'warn' : 'crit', `<div class="mbar"><i style="width:${Math.min(100, A.coverage)}%"></i></div>`)}
+    ${tile('🖥', 'DVRs online', `${A.onlinePct}<small>%</small>`, offN ? `found offline ${offN} time${offN > 1 ? 's' : ''}` : 'Always online', offN ? (A.onlinePct >= 95 ? 'warn' : 'crit') : 'good')}
+    ${tile('📷', 'Cameras live', `${A.livePct}<small>%</small>`, `about ${perDay(T.cams - T.live)} not live per day`, healthLevel(A.livePct))}
+    ${tile('⏺', 'Playback errors', T.pb, T.pb ? `about ${perDay(T.pb)} DVRs per day` : 'None found', T.pb ? 'crit' : 'good')}
+   </div>
+   <div class="hx"><div class="hx-h"><b>How is ${A.healthyPct}% worked out?</b> <span class="muted">Each camera counts once for every day it was checked.</span></div>
+    <div class="hx-bar">${seg.filter(x => x[1]).map(x => `<i class="hx-${x[0]}" style="flex:${x[1]}" title="${x[2]}: ${x[1]}"></i>`).join('')}</div>
+    <div class="hx-leg">${seg.map(x => `<span><i class="hx-${x[0]}"></i><b>${x[1]}</b> ${x[2]} <span class="muted">· ${x[3]}</span></span>`).join('')}</div>
+    <div class="hx-f">${T.cams} camera checks − ${T.off} on offline DVRs − ${T.nl} not live − ${T.nr} not recording = <b>${T.healthy} healthy</b> &nbsp;→&nbsp; ${T.healthy} ÷ ${T.cams} = <b>${A.healthyPct}%</b></div></div></div>
+
+  <div class="kgrid" style="margin-top:12px">
+   <div class="mk"><span>🏆</span><b>${best.v}%</b><small>Best day · ${esc(fmtDate(best.d))}</small></div>
+   <div class="mk"><span>📉</span><b>${worst.v}%</b><small>Worst day · ${esc(fmtDate(worst.d))}</small></div>
+   <div class="mk" ${scoped ? 'title="Counted for the whole city — not split by Type / Software"' : ''}><span>⚠</span><b>${A.newExc}</b><small>New issues raised</small></div>
+   <div class="mk" ${scoped ? 'title="Counted for the whole city — not split by Type / Software"' : ''}><span>🎫</span><b>${A.tickets}</b><small>Fix Engine tickets raised</small></div>
+  </div>
+
+  <div class="card" style="margin-top:12px"><h3>Fully healthy — day by day</h3>${lineChart(A.days.map(x => ({d: x.d, v: x.v})))}</div>
+
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise — ${esc(sp.label)}</h3><span class="small muted">Weakest first</span></div>
+   <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Outlet</th><th>City</th><th class="n">Days checked</th><th class="n">DVR offline days</th><th class="n">Cameras live</th><th class="n">Fully healthy</th><th class="n">Playback error days</th></tr></thead><tbody>
+   ${rows.map(o => { const h = pct(o.healthy, o.cams), l = pct(o.live, o.cams), offD = o.audited - o.online;
+     return `<tr class="${o.audited && h < tgt - 5 ? 'rowbad' : ''}"><td><b>${esc(o.d['Outlet Name'])}</b> <span class="muted small">${esc(o.d['DVR Code'])}</span></td><td>${esc(o.d.City)}</td>
+      <td class="n">${o.audited ? `${o.audited}/${A.n}` : '<span class="pill p-mute">Not audited</span>'}</td>
+      <td class="n">${!o.audited ? '' : offD ? `<b style="color:var(--bad)">${offD}</b>` : '0'}</td><td class="n">${o.audited ? pc(l, tgt, tgt - 5) : ''}</td><td class="n">${o.audited ? pc(h, tgt, tgt - 5) : ''}</td>
+      <td class="n">${!o.audited ? '' : o.pb ? `<b style="color:var(--bad)">${o.pb}</b>` : '0'}</td></tr>`; }).join('')}</tbody></table></div>
+   <div class="small muted" style="margin-top:6px">% = added up over the days checked. Red rows are more than 5 points below the ${tgt}% target.</div></div>`;
+}
 function viewDashboard() {
-  const f = S.dash, r = computeReport(f), alerts = computeAlerts(r, f);
+  const f = S.dash, sp = dashSpan(f); f.date = sp.to;
+  const r = computeReport(f), alerts = computeAlerts(r, f);
   const cities = uniq(S.cfg.devices.map(d => d.City)), types = uniq(S.cfg.devices.map(d => d.Type)), sws = uniq(S.cfg.devices.map(d => d.Software));
   const codes = new Set(r.devs.map(d => d['DVR Code']));
   const act = S.data.exceptions.filter(x => x.Status !== 'Resolved' && codes.has(x['DVR Code'])), live = act.filter(isLive);
@@ -885,19 +978,35 @@ function viewDashboard() {
     [ro.length, '🔁', 'Repeat sites', 'p-warn', `data-act="dash-exc" data-f="status:Active"`],
     [rv.length, '✔', 'Recovered — verify', 'p-info', `data-act="dash-exc" data-f="status:Recovered - Verify"`],
     [r.pending, '📋', 'Not audited yet', 'p-mute', canAudit() ? `data-act="go" data-v="audit"` : '']
-  ].filter(c => c[0]);
+  ].filter(c => c[0] && !(sp.multi && c[2] === 'Not audited yet'));
   const top = live.slice().sort((a, b) => ({Critical: 0, High: 1, Medium: 2, Low: 3}[a.Severity] - {Critical: 0, High: 1, Medium: 2, Low: 3}[b.Severity]) || hoursSince(b['First Seen']) - hoursSince(a['First Seen'])).slice(0, 5);
   const k = (cls, l, v, s) => `<div class="kpi ${cls}"><div class="l">${l}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
-  return `
-  <div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0" class="grow">CCTV health — ${esc(fmtDate(f.date))} · ${esc(r.shift)}</h2>
-   <button class="btn sm" data-act="wa">📋 WhatsApp</button><button class="btn sm" data-act="csv">⬇ CSV</button><button class="btn sm" data-act="refresh">⟳</button></div>
+  const actionCard = `
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Needs action</h3><a href="#" class="small" data-act="go" data-v="exceptions">All exceptions →</a></div>
+   ${chips.length ? `<div class="chiprow">${chips.map(([n, i, l, c, a]) => `<button class="achip ${c}" ${a}><span>${i}</span><b>${n}</b>${l}</button>`).join('')}</div>` : '<div class="okline">✔ Nothing needs action right now.</div>'}
+   ${top.length ? `<div class="toplist">${top.map(x => { const cl = camLabel(x['DVR Code'], x['Camera No']); return `<div class="trow" data-act="alert-go" data-exc="${esc(x['Exception ID'])}">
+     <span class="sev s-${esc(x.Severity)}">${x.Severity === 'Critical' ? '✕' : x.Severity === 'High' ? '!' : '•'}</span>
+     <div class="grow"><b>${esc(x['Outlet Name'])}</b> <span class="muted">${esc(x.Level === 'Camera' ? 'Cam ' + x['Camera No'] + (cl ? ' · ' + cl : '') : x.Level === 'Playback' ? 'Recording' : 'DVR')}</span><div class="small muted">${esc(x.Issue)}</div></div>
+     <span class="pill ${slaBreached(x) ? 'p-bad' : 'p-mute'}">${esc(daysLabel(x))}</span>${x['Ticket ID'] ? `<span class="pill p-info">${esc(x['Ticket ID'])}</span>` : '<span class="pill p-bad">No ticket</span>'}</div>`; }).join('')}</div>` : ''}
+  </div>`;
+  const minDate = addDays(todayStr(), -((num(setting('Report Months', 3)) || 3) * 31 + 8));
+  const head = `
+  <div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0" class="grow">CCTV health — ${sp.multi ? esc(sp.name === 'Custom dates' ? sp.label : sp.name + ' · ' + sp.label) : esc(fmtDate(f.date)) + ' · ' + esc(r.shift)}</h2>
+   <button class="btn sm" data-act="wa">📋 WhatsApp</button><button class="btn sm" data-act="csv">⬇ CSV</button><button class="btn sm" data-act="dash-refresh">⟳</button></div>
    <div class="filters">
-    <div><label class="lbl">Date</label><input type="date" data-change="dash" data-k="date" value="${f.date}" max="${todayStr()}"></div>
-    <div><label class="lbl">Audit</label><select data-change="dash" data-k="shift"><option value="AUTO" ${f.shift === 'AUTO' ? 'selected' : ''}>Current (${esc(currentShift())})</option>${opts(sessionNames(f.date), f.shift)}<option value="All" ${f.shift === 'All' ? 'selected' : ''}>Whole day (latest)</option></select></div>
+    <div><label class="lbl">Period</label><select data-change="dash" data-k="range">${RANGES.map(([v, l]) => `<option value="${v}" ${f.range === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${f.range === 'custom' ? `<div><label class="lbl">From</label><input type="date" data-change="dash" data-k="from" value="${sp.from}" min="${minDate}" max="${todayStr()}"></div>
+    <div><label class="lbl">To</label><input type="date" data-change="dash" data-k="to" value="${sp.to}" min="${minDate}" max="${todayStr()}"></div>` : ''}
+    <div><label class="lbl">Audit</label><select data-change="dash" data-k="shift">${sp.multi ? '' : `<option value="AUTO" ${f.shift === 'AUTO' ? 'selected' : ''}>Current (${esc(currentShift())})</option>`}${opts(sp.multi ? shifts().map(x => x.name) : sessionNames(f.date), f.shift)}<option value="All" ${f.shift === 'All' || (sp.multi && f.shift === 'AUTO') ? 'selected' : ''}>Whole day (latest)</option></select></div>
     <div><label class="lbl">City</label><select data-change="dash" data-k="city" ${userCity() !== 'All' ? 'disabled' : ''}>${opts(cities, f.city, 'All cities')}</select></div>
     <div><label class="lbl">Type</label><select data-change="dash" data-k="type">${opts(types, f.type, 'Outlet + CK')}</select></div>
     <div><label class="lbl">Software</label><select data-change="dash" data-k="sw">${opts(sws, f.sw, 'iVMS + KVMS')}</select></div>
-   </div></div>
+   </div></div>`;
+  if (sp.multi) return `${head}${periodBody(f, sp)}
+  <div class="small muted" style="margin:16px 2px 0"><b>Open right now</b> — today's open issues, whatever period is picked above.</div>
+  ${actionCard}
+  ${reasonCard(r, f)}`;
+  return `${head}
   ${S.mode === 'live' && S.backendVersion && verLt(S.backendVersion, NEED_BACKEND) ? `<div class="banner" style="background:var(--badbg);border-color:#f2a7a7;color:var(--bad)">⚠ <span class="grow">Backend is v${esc(S.backendVersion)} — this app needs v${NEED_BACKEND}. ${canResolve() ? 'Paste the latest Code.gs, run <b>setupSheets</b>, then Deploy → Manage deployments → ✏️ → <b>New version</b>.' : 'Please tell your admin.'}</span></div>` : ''}
   ${publishBanner(f.date, r.shift)}
 
@@ -915,13 +1024,7 @@ function viewDashboard() {
   ${issueStory(r)}
   ${reasonCard(r, f)}
 
-  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Needs action</h3><a href="#" class="small" data-act="go" data-v="exceptions">All exceptions →</a></div>
-   ${chips.length ? `<div class="chiprow">${chips.map(([n, i, l, c, a]) => `<button class="achip ${c}" ${a}><span>${i}</span><b>${n}</b>${l}</button>`).join('')}</div>` : '<div class="okline">✔ Nothing needs action right now.</div>'}
-   ${top.length ? `<div class="toplist">${top.map(x => { const cl = camLabel(x['DVR Code'], x['Camera No']); return `<div class="trow" data-act="alert-go" data-exc="${esc(x['Exception ID'])}">
-     <span class="sev s-${esc(x.Severity)}">${x.Severity === 'Critical' ? '✕' : x.Severity === 'High' ? '!' : '•'}</span>
-     <div class="grow"><b>${esc(x['Outlet Name'])}</b> <span class="muted">${esc(x.Level === 'Camera' ? 'Cam ' + x['Camera No'] + (cl ? ' · ' + cl : '') : x.Level === 'Playback' ? 'Recording' : 'DVR')}</span><div class="small muted">${esc(x.Issue)}</div></div>
-     <span class="pill ${slaBreached(x) ? 'p-bad' : 'p-mute'}">${esc(daysLabel(x))}</span>${x['Ticket ID'] ? `<span class="pill p-info">${esc(x['Ticket ID'])}</span>` : '<span class="pill p-bad">No ticket</span>'}</div>`; }).join('')}</div>` : ''}
-  </div>
+  ${actionCard}
 
   <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Site map — every DVR at a glance</h3><span class="small muted">${canAudit() ? 'Tap a tile to open it' : 'Hover a tile for details'}</span></div>${siteMap(r, live)}</div>
 
@@ -1016,7 +1119,15 @@ function auditorList(r) {
   return `<table><thead><tr><th>Auditor</th><th class="n">DVRs</th><th>From</th><th>To</th></tr></thead><tbody>${arr.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${v.n}</td><td>${fmtTime(v.first)}</td><td>${fmtTime(v.last)}</td></tr>`).join('')}</tbody></table>`;
 }
 function waSummary() {
-  const f = S.dash, r = computeReport(f), al = computeAlerts(r, f);
+  const f = S.dash, sp = dashSpan(f);
+  if (sp.multi && S.trend) {
+    const A = periodAgg(f, sp.from, sp.to), T = A.T;
+    return [`*${setting('Org Name', 'Third Eye')} — CCTV Audit*`, `${sp.name === 'Custom dates' ? '' : sp.name + ' · '}${sp.label}${f.city !== 'All' ? ' · ' + f.city : ''}`, '',
+      `✅ Checks done: ${T.audited}/${A.expected} (${A.coverage}%) · ${A.auditedDays}/${A.n} days`,
+      `🖥 DVRs online: ${A.onlinePct}%`, `📷 Cameras live: ${A.livePct}%`, `⏺ Playback errors: ${T.pb}`,
+      `💚 Fully healthy cameras: ${A.healthyPct}%`, `⚠ New issues: ${A.newExc} · Tickets raised: ${A.tickets}`].join('\n');
+  }
+  const r = computeReport(f), al = computeAlerts(r, f);
   const act = S.data.exceptions.filter(x => x.Status !== 'Resolved' && r.devs.some(d => d['DVR Code'] === x['DVR Code']));
   const off = r.rows.filter(x => x.a && x.a['DVR Online'] !== 'Y').map(x => x.d['Outlet Name']);
   const pbe = r.rows.filter(x => x.a && x.a.Playback === 'Error').map(x => x.d['Outlet Name']);
@@ -1032,6 +1143,15 @@ function waSummary() {
   return L.join('\n');
 }
 function csvReport() {
+  const sp = dashSpan(S.dash);
+  if (sp.multi && S.trend) {
+    const A = periodAgg(S.dash, sp.from, sp.to);
+    const out = [['Outlet Name', 'DVR Code', 'City', 'Type', 'Software', 'From', 'To', 'Days in period', 'Days checked', 'DVR offline days', 'Camera checks', 'Cameras live', 'Cameras live %', 'Healthy cameras', 'Fully healthy %', 'Playback error days'],
+      ...A.outlets.map(o => [o.d['Outlet Name'], o.d['DVR Code'], o.d.City, o.d.Type, o.d.Software, sp.from, sp.to, A.n, o.audited, o.audited - o.online, o.cams, o.live, o.audited ? pct(o.live, o.cams) : '', o.healthy, o.audited ? pct(o.healthy, o.cams) : '', o.pb])];
+    const csv = out.map(rw => rw.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv'})), a = document.createElement('a');
+    a.href = url; a.download = `ThirdEye_${sp.from}_to_${sp.to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+  }
   const r = computeReport(S.dash);
   const head = ['Type', 'Outlet Name', 'DVR Code', 'DVR Serial No', 'Software', 'City', 'Date', 'Shift', 'Audited', 'DVR Online', 'Cameras Installed', 'Cameras Live', 'Not Live Cameras', 'Playback', 'Playback Cameras', 'Healthy Cameras', 'DVR Issue', 'Camera Issues', 'Playback Issue', 'Auditor', 'Submitted At'];
   const rows = r.rows.map(({d, a}) => [d.Type, d['Outlet Name'], d['DVR Code'], d['DVR Serial No'], d.Software, d.City, S.dash.date, r.shift, a ? 'Y' : 'N', a ? a['DVR Online'] : '', d['Cameras Installed'], a ? a['Cameras Live'] : '', a ? a['Not Live Cameras'] : '', a ? a.Playback : '', a ? a['Playback Cameras'] : '', a ? a['Healthy Cameras'] : '', a ? a['DVR Issue'] : '', a ? a['Camera Issues'] : '', a ? a['Playback Issue'] : '', a ? a['Auditor Name'] : '', a ? a['Submitted At'] : '']);
@@ -1972,7 +2092,7 @@ async function loadTrend(force) {
   const months = num(setting('Report Months', 3)) || 3;
   try { const j = await api('getTrend', {days: months * 31 + 8}); S.trend = {at: Date.now(), audits: j.audits, exc: j.exceptions}; }
   catch (e) { S.trend = {at: Date.now(), audits: [], exc: [], err: e.message}; }
-  if (S.view === 'report') render();
+  if (S.view === 'report' || S.view === 'dashboard') render();
 }
 function trendCols() {
   const today = todayStr(), months = num(setting('Report Months', 3)) || 3, cols = [];
@@ -2029,6 +2149,20 @@ function viewReport() {
   return `<div class="card"><div class="row"><h2 class="grow" style="margin:0">Audit report</h2><button class="btn sm" data-act="rep-csv">⬇ CSV</button><button class="btn sm" data-act="rep-refresh">⟳ Refresh</button></div>
    <div class="small muted" style="margin-top:4px"><b>Days</b> show the actual numbers (latest audit of the day per DVR). <b>Weeks / months</b> show % and daily averages so periods of different length compare fairly. <span class="lg c-ok">good</span> <span class="lg c-warn">watch</span> <span class="lg c-bad">act</span> <span class="lg c-na">not audited</span></div>
    ${S.trend.err ? `<div class="hint">Could not load: ${esc(S.trend.err)}</div>` : ''}</div>
+   <details class="more card" style="margin-top:12px" open><summary>🧮 How each row is worked out</summary>
+    <div class="tbl-wrap" style="margin-top:8px;max-height:none"><table><tbody>${[
+     ['Total DVR available', 'DVRs in your Devices list.'],
+     ['Total camera available', 'Cameras installed on those DVRs.'],
+     ['Total audit', 'Audits done ÷ audits due.'],
+     ['DVR online count', 'DVRs found online ÷ DVRs audited.'],
+     ['# Camera installed', 'Cameras on the DVRs that were audited.'],
+     ['Camera live count', 'Cameras showing a picture ÷ cameras audited.'],
+     ['Play back error count', 'DVRs where the recording did not play.'],
+     ['Fully healthy cameras', 'Cameras live and recording ÷ cameras audited.'],
+     ['New issues raised', 'Problems seen for the first time in that period.'],
+     ['Fix Engine tickets raised', 'Tickets logged in that period.']
+    ].map(([a, b]) => `<tr><td><b>${a}</b></td><td style="white-space:normal">${b}</td></tr>`).join('')}</tbody></table></div>
+    <div class="small muted" style="margin-top:6px">A day uses each DVR's latest audit. Weeks and months add up all their days.</div></details>
    ${publishBanner(today, cur)}
    ${groups.map(([name, devs]) => `<div class="card" style="margin-top:12px"><h3 style="margin-bottom:8px">${esc(name)} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">· ${devs.length} DVRs · ${devs.reduce((s, d) => s + num(d['Cameras Installed']), 0)} cameras</span></h3>
      <div class="tbl-wrap mx"><table class="matrix"><thead>${head}</thead><tbody>${matrixFor(devs, cols)}</tbody></table></div></div>`).join('')}
@@ -2100,6 +2234,7 @@ const ACT = {
   overlay: (el, e) => { if (e.target === el) closeLayer(); },
   go: (el, e) => { if (e && e.preventDefault && el.tagName === 'A') e.preventDefault(); closeLayer(); if (S.view === 'audit-form') saveDraft(); S.draft = null; S.view = el.dataset.v; render(); window.scrollTo(0, 0); },
   refresh: () => refresh(),
+  'dash-refresh': () => { S.trend = null; refresh(); },
   wa: () => copyText(waSummary()).then(ok => toast(ok ? 'Summary copied — paste in WhatsApp' : 'Copy failed', !ok)),
   csv: () => csvReport(),
   'alert-go': el => {
@@ -2219,7 +2354,17 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => { if (e.target.id === 'login' || e.target.id === 'relogin') { e.preventDefault(); doLogin(e.target); } });
 document.addEventListener('change', e => {
   const el = e.target, k = el.dataset.change; if (!k) return;
-  if (k === 'dash') { S.dash[el.dataset.k] = el.value; render(); }
+  if (k === 'dash') {
+    const key = el.dataset.k, f = S.dash;
+    if (key === 'range' && el.value === 'custom' && f.range !== 'custom') { const sp = dashSpan(f); f.from = sp.from; f.to = sp.to; }  // start custom from what is on screen
+    if ((key === 'from' || key === 'to') && !el.value) return;
+    f[key] = el.value;
+    const sp = dashSpan(f); f.date = sp.to;
+    if (key === 'shift') f.autoShift = false;
+    if (sp.multi && f.shift === 'AUTO') { f.shift = 'All'; f.autoShift = true; }      // a period has no "current shift"
+    else if (!sp.multi && f.autoShift) { f.shift = 'AUTO'; f.autoShift = false; }     // back to one day → back to current shift
+    render();
+  }
   else if (k === 'aud') { S.aud[el.dataset.k] = el.value; render(); }
   else if (k === 'exc') { S.exc[el.dataset.k] = el.value; render(); }
   else if (k === 'f-dvrissue') { S.draft.dvrIssue = el.value; saveDraft(); render(); }
