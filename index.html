@@ -39,6 +39,8 @@ a{color:var(--info)}
 .nav button.on{background:var(--navy2);color:#fff}
 .nav .badge{background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:17px}
 main{max-width:1180px;margin:0 auto;padding:14px 12px 90px}
+main.wide{max-width:none}
+@media(min-width:900px){main.wide{padding-left:20px;padding-right:20px}}
 @media(max-width:720px){
   .nav{position:fixed;bottom:0;top:auto;left:0;right:0;padding:6px 6px max(6px,env(safe-area-inset-bottom));border-top:1px solid #23344f}
   .nav button{flex-direction:column;gap:2px;font-size:11px;padding:6px 2px}
@@ -225,6 +227,23 @@ details.more>summary{cursor:pointer;font-weight:700;color:var(--info)}
 .hx-bar i{display:block;min-width:3px}.hx-good{background:#0ca30c}.hx-warn{background:#fab219}.hx-serious{background:#ec835a}.hx-crit{background:#d03b3b}
 .hx-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}.hx-leg>span{display:inline-flex;align-items:center;gap:5px}.hx-leg i{display:inline-block;width:10px;height:10px;border-radius:3px}
 .hx-f{margin-top:8px;background:#f6f8fb;border-radius:8px;padding:8px 10px;font-size:13px}
+.hero2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center}
+.hero2 .hero-r{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.hero2{grid-template-columns:1fr}.hero2 .hero-c{order:-1}}
+.hero-c{display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap}
+.hero-d{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bk{flex:1;min-width:230px;max-width:460px;font-size:13px}
+.bk-h{font-size:14px;margin-bottom:6px}
+.bk-r{display:grid;grid-template-columns:14px 1fr auto 58px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.bk-r>i{width:13px;height:13px;border-radius:3px;display:block}.bk-r>b:last-child{text-align:right;font-size:14px}
+.bk-0{opacity:.5}.bk-t{border-top:2px solid var(--ink3)}
+button.ht{text-align:left;cursor:pointer;font:inherit;color:inherit;width:100%;display:flex;flex-direction:column}
+button.ht:hover{box-shadow:0 2px 10px rgba(15,27,45,.12)}
+.ht.on{box-shadow:0 0 0 3px rgba(13,148,136,.4)}
+.ht-more{font-size:11.5px;color:var(--info);font-weight:700;margin-top:auto;padding-top:6px}
+.htx{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fbfcfe}
+.htx td{white-space:normal;vertical-align:top}
+th.sortable{cursor:pointer;text-decoration:underline dotted}
 .story .st-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 .story .st-n{flex:0 0 28px;height:28px;border-radius:50%;background:#eef1f4;color:#44515e;display:flex;align-items:center;justify-content:center;font-weight:800;margin-top:6px}
 .story .sr-crit .st-n{background:#fbe5e5;color:#b42318}.story .sr-serious .st-n{background:#fdece4;color:#a33a1c}.story .sr-warn .st-n{background:#fff3dc;color:#8a5a00}.story .sr-good .st-n{background:#e6f6e6;color:#0a7a0a}.story .sr-res .st-n{background:#152033;color:#fff}
@@ -608,7 +627,7 @@ function render() {
    <div class="sp"></div><span id="syncb">${syncBadge()}</span>${S.mode === 'demo' ? '<button class="chip demo-flag" style="border:0;cursor:pointer" data-act="exit-demo" title="Exit demo">DEMO ✕ exit</button>' : ''}
    <button class="chip" style="border:0;cursor:pointer" data-act="me">👤 ${esc(S.user.name)}<span class="rl"> · ${esc(S.user.role)}</span></button></div>
   <nav class="nav">${tabs.map(t => `<button class="${(S.view === t[0] || (S.view === 'audit-form' && t[0] === 'audit')) ? 'on' : ''}" data-act="go" data-v="${t[0]}"><span class="ic">${t[1]}</span><span>${t[2]}</span>${t[3] ? `<span class="badge" title="${esc(t[4] || '')}">${t[3]}</span>` : ''}</button>`).join('')}</nav>
-  <main id="main">${({dashboard: viewDashboard, audit: viewAuditList, 'audit-form': viewAuditForm, exceptions: viewExceptions, report: viewReport, guide: viewGuide})[S.view]()}</main>`;
+  <main id="main" class="${S.view === 'dashboard' || S.view === 'report' ? 'wide' : ''}">${({dashboard: viewDashboard, audit: viewAuditList, 'audit-form': viewAuditForm, exceptions: viewExceptions, report: viewReport, guide: viewGuide})[S.view]()}</main>`;
 }
 const inScope = x => userCity() === 'All' || x.City === userCity();
 function openLayer(html) { $('#layer').innerHTML = `<div class="overlay" data-act="overlay">${html}</div>`; }
@@ -714,14 +733,99 @@ function healthSplit(r) {
     const live = num(a['Cameras Live']); nl += Math.max(0, inst - live); nr += Math.max(0, live - num(a['Healthy Cameras'])); });
   return {total: r.camsAudited, healthy: r.healthy, off, nl, nr, pct: r.healthyPct};
 }
-function healthExplain(r) {
-  const H = healthSplit(r); if (!r.audited || !H.total) return '';
-  const seg = [['good', H.healthy, 'Healthy', 'live + recording'], ['warn', H.nr, 'Not recording', 'live but no footage'], ['serious', H.nl, 'Not live', 'camera problem'], ['crit', H.off, 'DVR offline', 'all its cameras blind']];
-  const w = v => (v / H.total * 100).toFixed(2);
-  return `<div class="hx"><div class="hx-h"><b>How is ${H.pct}% calculated?</b> <span class="muted">Every audited camera is counted once, in one of these 4 groups:</span></div>
-   <div class="hx-bar" role="img" aria-label="${H.healthy} healthy, ${H.nr} not recording, ${H.nl} not live, ${H.off} on offline DVRs">${seg.filter(x => x[1]).map(x => `<i class="hx-${x[0]}" style="flex:${w(x[1])}" title="${x[2]}: ${x[1]}"></i>`).join('')}</div>
-   <div class="hx-leg">${seg.map(x => `<span><i class="hx-${x[0]}"></i><b>${x[1]}</b> ${x[2]} <span class="muted">· ${x[3]}</span></span>`).join('')}</div>
-   <div class="hx-f">${H.total} cameras audited − ${H.off} on offline DVRs − ${H.nl} not live − ${H.nr} not recording = <b>${H.healthy} healthy</b> &nbsp;→&nbsp; ${H.healthy} ÷ ${H.total} = <b>${H.pct}%</b></div></div>`;
+/* Big circle: green = healthy. The rest of the circle is split by what went wrong. */
+const LOSS = [['crit', 'off', 'DVR offline', 'all its cameras blind'], ['serious', 'nl', 'Not live', 'camera problem'], ['warn', 'nr', 'Not recording', 'live but no footage']];
+function donut(H, size = 236) {
+  const sw = 36, r = size / 2 - sw / 2 - 2, c = 2 * Math.PI * r, m = size / 2;
+  if (!H || !H.total) return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="max-width:100%;height:auto" role="img" aria-label="No audit yet"><circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="#e8ebf0" stroke-width="${sw}"/><text x="50%" y="52%" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa4b2">—</text></svg>`;
+  const parts = [['good', H.healthy, 'Healthy'], ...LOSS.map(l => [l[0], H[l[1]], l[2]])].filter(p => p[1] > 0);
+  let acc = 0, arcs = '', labels = '';
+  parts.forEach(([k, v, name]) => {
+    const f = v / H.total, len = c * f, gap = parts.length > 1 ? 2 : 0;
+    arcs += `<circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="${STC[k]}" stroke-width="${sw}" stroke-dasharray="${Math.max(0.5, len - gap).toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="${(-acc * c).toFixed(1)}" transform="rotate(-90 ${m} ${m})" data-tip="${esc(name + ': ' + v + ' (' + pct(v, H.total) + '%)')}"/>`;
+    if (k !== 'good' && f >= 0.045) { const ang = (acc + f / 2) * 2 * Math.PI - Math.PI / 2;
+      labels += `<text x="${(m + r * Math.cos(ang)).toFixed(1)}" y="${(m + r * Math.sin(ang) + 4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="800" fill="${k === 'warn' ? '#3d2c00' : '#fff'}" pointer-events="none">${Math.round(f * 100)}%</text>`; }
+    acc += f;
+  });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="max-width:100%;height:auto" role="img" aria-label="${H.pct}% fully healthy">
+   <circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="#e8ebf0" stroke-width="${sw}"/>${arcs}${labels}
+   <text x="50%" y="49%" text-anchor="middle" font-size="${Math.round(size / 5.6)}" font-weight="800" fill="#152033">${H.pct}%</text>
+   <text x="50%" y="60%" text-anchor="middle" font-size="12.5" fill="#4a5a70">cameras healthy</text></svg>`;
+}
+/* Right half of the top card: the circle + what the missing part is made of */
+function heroHealth(H, unit, lines, note) {
+  const gap = Math.round((100 - H.pct) * 10) / 10;
+  const bk = H.total ? `<div class="bk"><div class="bk-h">${gap > 0 ? `Why not 100%? The missing <b>${gap}%</b> is:` : '<b>Nothing missing</b> — every camera is healthy 🎉'}</div>
+    ${LOSS.map(l => `<div class="bk-r ${H[l[1]] ? '' : 'bk-0'}"><i style="background:${STC[l[0]]}"></i><span><b>${l[2]}</b> <span class="muted">· ${l[3]}</span></span><span>${H[l[1]]} ${unit}</span><b>${H[l[1]] ? '−' + pct(H[l[1]], H.total) + '%' : '0%'}</b></div>`).join('')}
+    <div class="bk-r bk-t"><i style="background:${STC.good}"></i><span><b>Healthy</b> <span class="muted">· live + recording</span></span><span>${H.healthy} of ${H.total}</span><b>${H.pct}%</b></div>
+    ${note ? `<div class="small muted" style="margin-top:6px">${note}</div>` : ''}</div>` : '';
+  return `<div class="hero-c"><div class="hero-d">${donut(H)}${lines}</div>${bk}</div>`;
+}
+/* Top cards: tap one to see the outlets behind the number */
+function heroTile(key, icon, label, big, sub, st, extra = '') {
+  const on = S.dash.open === key;
+  return `<button type="button" class="ht ht-${st} ${on ? 'on' : ''}" data-act="ht-open" data-k="${key}" aria-expanded="${on}"><div class="ht-h"><span class="ht-i">${icon}</span>${label}<span class="ht-dot" title="${st}"></span></div><div class="ht-v">${big}</div>${extra}<div class="ht-s">${sub}</div><div class="ht-more">${on ? '▴ Hide outlets' : '▾ Show outlets'}</div></button>`;
+}
+function detailTable(title, cols, rows, emptyMsg) {
+  return `<div class="htx"><div class="row"><b class="grow">${title}</b><button class="btn sm ghost" data-act="ht-open" data-k="">✕ Close</button></div>
+   ${rows.length ? `<div class="tbl-wrap" style="margin-top:8px;max-height:360px"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<div class="okline">✔ ${emptyMsg}</div>`}</div>`;
+}
+const outletCell = d => `<b>${esc(d['Outlet Name'])}</b> <span class="muted small">${esc(d['DVR Code'])} · ${esc(d.City)}</span>`;
+const bySeen = (a, b) => String(a['First Seen']).localeCompare(String(b['First Seen']));
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+/* One day: outlet · problem · reason the site gave · how long it has been open */
+function tileDetail(r, key) {
+  if (!key) return '';
+  const liveE = (code, lv) => S.data.exceptions.filter(x => x['DVR Code'] === code && lv.includes(x.Level) && isLive(x)).sort(bySeen);
+  const why = (E, a, k, cams) => { let R = uniq(E.map(x => x.Reason).filter(v => v && v !== R_UNKNOWN)); if (!R.length) R = auditReasons({a, k, cams: cams || []});
+    return R.length ? R.map(esc).join('<br>') : '<span class="muted">Not given</span>'; };
+  const dur = (d, a, E) => E.length ? `<b>${esc(daysLabel(E[0]))}</b>` : fixedSince(d, a) ? '<span class="pill p-ok">Fixed after audit</span>' : '<span class="muted">New</span>';
+  const A = r.rows.filter(x => x.a), COLS = ['Outlet', 'Problem', 'Reason given', 'How long'];
+  const sub = t => `<div class="small muted">${t}</div>`;
+  if (key === 'aud') return detailTable(`📋 Not audited yet — ${plural(r.pending, 'DVR')}`, ['Outlet', 'Type', 'Software'], r.rows.filter(x => !x.a).map(({d}) => [outletCell(d), esc(d.Type), esc(d.Software)]), 'All DVRs have been checked.');
+  if (key === 'dvr') { const rows = A.filter(x => x.a['DVR Online'] !== 'Y').map(({d, a}) => { const E = liveE(d['DVR Code'], ['DVR']);
+      return [outletCell(d), esc(a['DVR Issue'] || 'DVR offline') + sub(num(d['Cameras Installed']) + ' cameras blind'), why(E, a, 'dvr'), dur(d, a, E)]; });
+    return detailTable(`🖥 DVR offline — ${plural(rows.length, 'outlet')}`, COLS, rows, 'All DVRs are online.'); }
+  if (key === 'cam') { const rows = A.map(({d, a}) => { const inst = num(d['Cameras Installed']), code = d['DVR Code'];
+      if (a['DVR Online'] !== 'Y') { const E = liveE(code, ['DVR']); return {n: inst, c: [outletCell(d), `<b>All ${inst}</b> cameras` + sub('because the DVR is offline'), why(E, a, 'dvr'), dur(d, a, E)]}; }
+      const n = inst - num(a['Cameras Live']); if (n <= 0) return null;
+      const cams = String(a['Not Live Cameras'] || '').split(',').map(x => x.trim()).filter(Boolean), E = liveE(code, ['Camera']);
+      return {n, c: [outletCell(d), `<b>${n}</b> of ${inst} not live` + sub(esc(a['Camera Issues'] || (cams.length ? 'Cam ' + cams.join(', ') : ''))), why(E, a, 'cam', cams), dur(d, a, E)]}; }).filter(Boolean).sort((x, y) => y.n - x.n);
+    return detailTable(`📷 Cameras not live — ${rows.reduce((t, x) => t + x.n, 0)} cameras at ${plural(rows.length, 'outlet')}`, COLS, rows.map(x => x.c), 'All cameras are live.'); }
+  const rows = A.filter(x => x.a.Playback === 'Error').map(({d, a}) => { const inst = num(d['Cameras Installed']), all = a['Playback Cameras'] === 'ALL', E = liveE(d['DVR Code'], ['Playback']);
+    return [outletCell(d), esc(a['Playback Issue'] || 'Playback error') + sub(all ? 'All ' + inst + ' cameras' : 'Cam ' + esc(a['Playback Cameras'])), why(E, a, 'rec'), dur(d, a, E)]; });
+  return detailTable(`⏺ Not recording — ${plural(rows.length, 'outlet')}`, COLS, rows, 'All checked DVRs are recording.');
+}
+/* A week / month: outlet · how often it happened · reason · is it still open now */
+function periodDetail(A, key, sp) {
+  if (!key) return '';
+  const hist = (code, lv) => S.data.exceptions.filter(x => x['DVR Code'] === code && lv.includes(x.Level) && x['First Seen'] && ymd(new Date(x['First Seen'])) <= sp.to && (x.Status !== 'Resolved' || !x['Resolved At'] || ymd(new Date(x['Resolved At'])) >= sp.from));
+  const why = E => { const R = uniq(E.map(x => x.Reason && x.Reason !== R_UNKNOWN ? x.Reason : x.Issue)); return R.length ? R.slice(0, 3).map(esc).join('<br>') : '<span class="muted">Not given</span>'; };
+  const now = E => { const L = E.filter(isLive).sort(bySeen); return L.length ? `<span class="pill p-bad">Still open · ${esc(daysLabel(L[0]))}</span>` : '<span class="pill p-ok">OK now</span>'; };
+  const COLS = ['Outlet', 'In this period', 'Reason', 'Now'], O = A.outlets, sub = t => `<div class="small muted">${t}</div>`;
+  if (key === 'aud') { const rows = O.filter(o => o.audited < A.n).sort((a, b) => a.audited - b.audited).map(o => [outletCell(o.d), `${o.audited} of ${plural(A.n, 'day')}`, `<b style="color:var(--bad)">${A.n - o.audited}</b>`]);
+    return detailTable(`📋 Days missed — ${plural(rows.length, 'outlet')}`, ['Outlet', 'Checked', 'Days missed'], rows, 'Every outlet was checked every day.'); }
+  if (key === 'dvr') { const rows = O.filter(o => o.audited > o.online).sort((a, b) => (b.audited - b.online) - (a.audited - a.online)).map(o => { const E = hist(o.d['DVR Code'], ['DVR']);
+      return [outletCell(o.d), `Offline on <b>${o.audited - o.online}</b> of ${plural(o.audited, 'day')} checked`, why(E), now(E)]; });
+    return detailTable(`🖥 DVR found offline — ${plural(rows.length, 'outlet')}`, COLS, rows, 'No DVR was found offline.'); }
+  if (key === 'cam') { const rows = O.filter(o => o.nl + o.off > 0).sort((a, b) => (b.nl + b.off) / b.audited - (a.nl + a.off) / a.audited).map(o => { const E = hist(o.d['DVR Code'], ['Camera', 'DVR']);
+      return [outletCell(o.d), `About <b>${Math.round((o.nl + o.off) / o.audited * 10) / 10}</b> of ${num(o.d['Cameras Installed'])} cameras not live per day` + sub(`on ${o.nlD + o.audited - o.online} of ${plural(o.audited, 'day')} checked`), why(E), now(E)]; });
+    return detailTable(`📷 Cameras not live — ${plural(rows.length, 'outlet')}`, COLS, rows, 'All cameras were live on every check.'); }
+  const rows = O.filter(o => o.pb > 0).sort((a, b) => b.pb - a.pb).map(o => { const E = hist(o.d['DVR Code'], ['Playback']);
+    return [outletCell(o.d), `Playback error on <b>${o.pb}</b> of ${plural(o.audited, 'day')} checked`, why(E), now(E)]; });
+  return detailTable(`⏺ Playback errors — ${plural(rows.length, 'outlet')}`, COLS, rows, 'No playback errors found.');
+}
+/* Site map for a week / month: colour = average fully healthy % over the days checked */
+function periodMap(A, tgt) {
+  const by = {}, cnt = {good: 0, warn: 0, crit: 0, none: 0}, order = {crit: 0, warn: 1, none: 2, good: 3}, icon = {good: '✓', warn: '⚠', crit: '✕', none: '…'};
+  A.outlets.forEach(o => { const h = pct(o.healthy, o.cams), s = !o.audited ? 'none' : h >= tgt ? 'good' : h >= tgt - 5 ? 'warn' : 'crit'; cnt[s]++; (by[o.d.City] = by[o.d.City] || []).push({o, h, s}); });
+  return `<div class="legend">${[['good', `On target (${tgt}% or more)`], ['warn', 'Just below target'], ['crit', 'Far below target'], ['none', 'Not audited']].map(([k, l]) => `<span><i class="sw" style="background:${STC[k]}">${icon[k]}</i>${l} <b>${cnt[k]}</b></span>`).join('')}</div>
+   ${Object.entries(by).map(([city, list]) => { const hc = list.reduce((t, x) => t + x.o.healthy, 0), cc = list.reduce((t, x) => t + x.o.cams, 0);
+     return `<div class="mapcity"><div class="mapc-h"><b>${esc(city)}</b><span class="muted small">average ${pct(hc, cc)}% healthy · ${list.filter(x => x.s === 'good').length}/${list.length} on target</span></div><div class="tiles">
+      ${list.sort((x, y) => order[x.s] - order[y.s] || x.h - y.h || String(x.o.d['Outlet Name']).localeCompare(y.o.d['Outlet Name'])).map(({o, h, s}) => { const d = o.d, offD = o.audited - o.online;
+        const lab = !o.audited ? 'Not audited' : `${h}% · ${o.bad ? plural(o.bad, 'bad day') : 'no bad days'}`;
+        const tip = `${d['Outlet Name']} (${d['DVR Code']})\n${o.audited ? `Average ${h}% fully healthy\nChecked ${o.audited} of ${plural(A.n, 'day')}\nDays with a problem: ${o.bad}\nDVR offline days: ${offD}\nCameras live: ${pct(o.live, o.cams)}%\nPlayback error days: ${o.pb}` : 'Not audited in this period'}`;
+        return `<div class="tile t-${s}" style="cursor:default" data-tip="${esc(tip)}" aria-label="${esc(d['Outlet Name'] + ': ' + lab)}"><span class="ti">${icon[s]}</span><span class="tn">${esc(shortName(d['Outlet Name']))}</span><span class="ts2">${esc(lab)}</span></div>`; }).join('')}</div></div>`; }).join('')}`;
 }
 function ring(pctVal, lvl, size = 150) {
   const r = size / 2 - 12, c = 2 * Math.PI * r, f = Math.max(0, Math.min(100, pctVal)) / 100;
@@ -903,14 +1007,14 @@ function periodAgg(f, from, to) {
   const byDay = {};
   S.trend.audits.forEach(a => { if (a[0] < from || a[0] > to || !codes.has(a[2]) || (shift && a[1] !== shift)) return;
     const D = byDay[a[0]] || (byDay[a[0]] = {}); if (!D[a[2]] || String(a[9]) > String(D[a[2]][9])) D[a[2]] = a; });
-  const Z = () => ({audited: 0, online: 0, cams: 0, live: 0, healthy: 0, pb: 0, off: 0, nl: 0, nr: 0});
+  const Z = () => ({audited: 0, online: 0, cams: 0, live: 0, healthy: 0, pb: 0, off: 0, nl: 0, nr: 0, nlD: 0, bad: 0});
   const T = Z(), days = [], out = {};
   devs.forEach(d => out[d['DVR Code']] = {d, ...Z()});
   for (let d = from; d <= to; d = addDays(d, 1)) {
     const s = Z();
     Object.values(byDay[d] || {}).forEach(a => {
       const inst = num(a[5]), live = num(a[6]), hl = num(a[8]), on = a[4] === 'Y';
-      [s, out[a[2]]].forEach(x => { x.audited++; if (on) x.online++; x.cams += inst; x.live += live; x.healthy += hl; if (a[7] === 'Error') x.pb++;
+      [s, out[a[2]]].forEach(x => { x.audited++; if (on) x.online++; x.cams += inst; x.live += live; x.healthy += hl; if (a[7] === 'Error') x.pb++; if (on && live < inst) x.nlD++; if (hl < inst) x.bad++;
         if (!on) x.off += inst; else { x.nl += Math.max(0, inst - live); x.nr += Math.max(0, live - hl); } });
     });
     Object.keys(s).forEach(k => T[k] += s[k]);
@@ -927,29 +1031,27 @@ function periodBody(f, sp) {
   if (!T.audited) return `${S.trend.err ? `<div class="hint">Could not load: ${esc(S.trend.err)}</div>` : ''}<div class="card" style="margin-top:12px"><div class="empty">No audits found between ${esc(fmtDate(sp.from))} and ${esc(fmtDate(sp.to))}.</div></div>`;
   const lvl = healthLevel(A.healthyPct);
   const P = periodAgg(f, addDays(sp.from, -sp.n), addDays(sp.from, -1)), dh = P.T.cams ? Math.round((A.healthyPct - P.healthyPct) * 10) / 10 : null;
-  const tile = (icon, label, big, sub, st, extra = '') => `<div class="ht ht-${st}"><div class="ht-h"><span class="ht-i">${icon}</span>${label}<span class="ht-dot" title="${st}"></span></div><div class="ht-v">${big}</div>${extra}<div class="ht-s">${sub}</div></div>`;
   const perDay = v => Math.round(v / Math.max(1, A.auditedDays) * 10) / 10, offN = T.audited - T.online;
-  const seg = [['good', T.healthy, 'Healthy', 'live + recording'], ['warn', T.nr, 'Not recording', 'live but no footage'], ['serious', T.nl, 'Not live', 'camera problem'], ['crit', T.off, 'DVR offline', 'all its cameras blind']];
   const did = A.days.filter(x => x.v !== null), best = did.reduce((a, b) => b.v > a.v ? b : a), worst = did.reduce((a, b) => b.v < a.v ? b : a);
   const scoped = f.type !== 'All' || f.sw !== 'All';
-  const rows = A.outlets.slice().sort((a, b) => (a.audited ? pct(a.healthy, a.cams) : 101) - (b.audited ? pct(b.healthy, b.cams) : 101) || String(a.d['Outlet Name']).localeCompare(b.d['Outlet Name']));
+  const hOf = o => o.audited ? pct(o.healthy, o.cams) : -1, dir = f.osort === 'asc' ? 1 : -1;   // not audited always last
+  const full = A.outlets.filter(o => o.audited && o.healthy >= o.cams).length;
+  const rows = A.outlets.filter(o => f.allOut || !o.audited || o.healthy < o.cams).sort((a, b) => (!a.audited - !b.audited) || (hOf(a) - hOf(b)) * dir || String(a.d['Outlet Name']).localeCompare(b.d['Outlet Name']));
   const pc = (v, good, warn) => `<b style="color:${v >= good ? 'var(--ok)' : v >= warn ? 'var(--warn)' : 'var(--bad)'}">${v}%</b>`;
   return `${S.trend.err ? `<div class="hint">Could not load: ${esc(S.trend.err)}</div>` : ''}
-  <div class="card hero" style="margin-top:12px">
-   <div class="hero-l">${ring(A.healthyPct, lvl)}
-    <div class="small" style="text-align:center;margin-top:-2px">Average over <b>${A.auditedDays}</b> audited day${A.auditedDays > 1 ? 's' : ''}</div>
-    <div class="stchip st-${lvl}"><span class="dot"></span>${LVL_TXT[lvl]}</div>
-    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs the ${sp.n} days before` : ''}</div></div>
+  <div class="card hero2" style="margin-top:12px">
    <div class="hero-r">
-    ${tile('📋', 'Checks done', `${A.coverage}<small>%</small>`, `${T.audited} of ${A.expected} DVR checks · ${A.auditedDays}/${A.n} days`, A.coverage >= 98 ? 'good' : A.coverage >= 85 ? 'warn' : 'crit', `<div class="mbar"><i style="width:${Math.min(100, A.coverage)}%"></i></div>`)}
-    ${tile('🖥', 'DVRs online', `${A.onlinePct}<small>%</small>`, offN ? `found offline ${offN} time${offN > 1 ? 's' : ''}` : 'Always online', offN ? (A.onlinePct >= 95 ? 'warn' : 'crit') : 'good')}
-    ${tile('📷', 'Cameras live', `${A.livePct}<small>%</small>`, `about ${perDay(T.cams - T.live)} not live per day`, healthLevel(A.livePct))}
-    ${tile('⏺', 'Playback errors', T.pb, T.pb ? `about ${perDay(T.pb)} DVRs per day` : 'None found', T.pb ? 'crit' : 'good')}
+    ${heroTile('aud', '📋', 'Checks done', `${A.coverage}<small>%</small>`, `${T.audited} of ${A.expected} DVR checks · ${A.auditedDays}/${A.n} days`, A.coverage >= 98 ? 'good' : A.coverage >= 85 ? 'warn' : 'crit', `<div class="mbar"><i style="width:${Math.min(100, A.coverage)}%"></i></div>`)}
+    ${heroTile('dvr', '🖥', 'DVRs online', `${A.onlinePct}<small>%</small>`, offN ? `found offline ${offN} time${offN > 1 ? 's' : ''}` : 'Always online', offN ? (A.onlinePct >= 95 ? 'warn' : 'crit') : 'good')}
+    ${heroTile('cam', '📷', 'Cameras live', `${A.livePct}<small>%</small>`, `about ${perDay(T.cams - T.live)} not live per day`, healthLevel(A.livePct))}
+    ${heroTile('rec', '⏺', 'Playback errors', T.pb, T.pb ? `about ${perDay(T.pb)} DVRs per day` : 'None found', T.pb ? 'crit' : 'good')}
    </div>
-   <div class="hx"><div class="hx-h"><b>How is ${A.healthyPct}% worked out?</b> <span class="muted">Each camera counts once for every day it was checked.</span></div>
-    <div class="hx-bar">${seg.filter(x => x[1]).map(x => `<i class="hx-${x[0]}" style="flex:${x[1]}" title="${x[2]}: ${x[1]}"></i>`).join('')}</div>
-    <div class="hx-leg">${seg.map(x => `<span><i class="hx-${x[0]}"></i><b>${x[1]}</b> ${x[2]} <span class="muted">· ${x[3]}</span></span>`).join('')}</div>
-    <div class="hx-f">${T.cams} camera checks − ${T.off} on offline DVRs − ${T.nl} not live − ${T.nr} not recording = <b>${T.healthy} healthy</b> &nbsp;→&nbsp; ${T.healthy} ÷ ${T.cams} = <b>${A.healthyPct}%</b></div></div></div>
+   ${heroHealth({total: T.cams, healthy: T.healthy, off: T.off, nl: T.nl, nr: T.nr, pct: A.healthyPct}, 'checks', `<div class="small" style="text-align:center">Average over <b>${A.auditedDays}</b> audited day${A.auditedDays > 1 ? 's' : ''}</div>
+    <div class="stchip st-${lvl}"><span class="dot"></span>${LVL_TXT[lvl]}</div>
+    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs the ${sp.n} days before` : ''}</div>`, 'Each camera counts once for every day it was checked.')}
+   ${periodDetail(A, f.open, sp)}</div>
+
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Site map — average for ${esc(sp.label)}</h3><span class="small muted">Hover a tile for details</span></div>${periodMap(A, tgt)}</div>
 
   <div class="kgrid" style="margin-top:12px">
    <div class="mk"><span>🏆</span><b>${best.v}%</b><small>Best day · ${esc(fmtDate(best.d))}</small></div>
@@ -960,9 +1062,9 @@ function periodBody(f, sp) {
 
   <div class="card" style="margin-top:12px"><h3>Fully healthy — day by day</h3>${lineChart(A.days.map(x => ({d: x.d, v: x.v})))}</div>
 
-  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise — ${esc(sp.label)}</h3><span class="small muted">Weakest first</span></div>
-   <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Outlet</th><th>City</th><th class="n">Days checked</th><th class="n">DVR offline days</th><th class="n">Cameras live</th><th class="n">Fully healthy</th><th class="n">Playback error days</th></tr></thead><tbody>
-   ${rows.map(o => { const h = pct(o.healthy, o.cams), l = pct(o.live, o.cams), offD = o.audited - o.online;
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise — ${esc(sp.label)}</h3><span class="small muted">${f.allOut ? 'All outlets' : `Only outlets below 100% · ${full} at 100% hidden`}</span><button class="btn sm ghost" data-act="out-all">${f.allOut ? 'Only below 100%' : 'Show all'}</button></div>
+   <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Outlet</th><th>City</th><th class="n">Days checked</th><th class="n">DVR offline days</th><th class="n">Cameras live</th><th class="n sortable" data-act="out-sort" title="Tap to flip the order">Fully healthy ${dir < 0 ? '▼' : '▲'}</th><th class="n">Playback error days</th></tr></thead><tbody>
+   ${rows.length ? '' : '<tr><td colspan="7"><b style="color:var(--ok)">✔ Every outlet is at 100%.</b></td></tr>'}${rows.map(o => { const h = pct(o.healthy, o.cams), l = pct(o.live, o.cams), offD = o.audited - o.online;
      return `<tr class="${o.audited && h < tgt - 5 ? 'rowbad' : ''}"><td><b>${esc(o.d['Outlet Name'])}</b> <span class="muted small">${esc(o.d['DVR Code'])}</span></td><td>${esc(o.d.City)}</td>
       <td class="n">${o.audited ? `${o.audited}/${A.n}` : '<span class="pill p-mute">Not audited</span>'}</td>
       <td class="n">${!o.audited ? '' : offD ? `<b style="color:var(--bad)">${offD}</b>` : '0'}</td><td class="n">${o.audited ? pc(l, tgt, tgt - 5) : ''}</td><td class="n">${o.audited ? pc(h, tgt, tgt - 5) : ''}</td>
@@ -981,7 +1083,6 @@ function viewDashboard() {
   const res7 = S.data.exceptions.filter(x => codes.has(x['DVR Code']) && x.Status === 'Resolved' && x['Resolved At'] && hoursSince(x['Resolved At']) <= 168);
   const mttr = res7.length ? res7.reduce((t, x) => t + (new Date(x['Resolved At']) - new Date(x['First Seen'])) / 36e5, 0) / res7.length : null;
   const cov = live.length ? Math.round((live.length - noT.length) / live.length * 100) : 100;
-  const tile = (icon, label, big, sub, st, extra = '') => `<div class="ht ht-${st}"><div class="ht-h"><span class="ht-i">${icon}</span>${label}<span class="ht-dot" title="${st}"></span></div><div class="ht-v">${big}</div>${extra}<div class="ht-s">${sub}</div></div>`;
   const chips = [
     [crit.length, '🔴', 'Critical', 'p-bad', `data-act="dash-exc" data-f="sev:Critical"`],
     [sla.length, '⏰', 'Past SLA', 'p-bad', `data-act="dash-exc" data-f="status:SLA"`],
@@ -1021,17 +1122,16 @@ function viewDashboard() {
   ${S.mode === 'live' && S.backendVersion && verLt(S.backendVersion, NEED_BACKEND) ? `<div class="banner" style="background:var(--badbg);border-color:#f2a7a7;color:var(--bad)">⚠ <span class="grow">Backend is v${esc(S.backendVersion)} — this app needs v${NEED_BACKEND}. ${canResolve() ? 'Paste the latest Code.gs, run <b>setupSheets</b>, then Deploy → Manage deployments → ✏️ → <b>New version</b>.' : 'Please tell your admin.'}</span></div>` : ''}
   ${publishBanner(f.date, r.shift)}
 
-  <div class="card hero" style="margin-top:12px">
-   <div class="hero-l">${r.audited ? ring(r.healthyPct, lvl) : ring(0, 'none')}
-    ${r.audited ? `<div class="small" style="text-align:center;margin-top:-2px"><b>${r.healthy}</b> of <b>${r.camsAudited}</b> cameras live <u>and</u> recording</div>` : ''}
-    <div class="stchip st-${lvl}"><span class="dot"></span>${r.audited ? LVL_TXT[lvl] : 'No audit yet'}</div>
-    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs ${esc(prev.shift)} ${esc(fmtDate(prev.date))}` : ''}</div></div>
+  <div class="card hero2" style="margin-top:12px">
    <div class="hero-r">
-    ${tile('📋', 'Audited', `${r.audited}<small>/${r.totalDvr}</small>`, r.pending ? `${r.pending} DVR${r.pending > 1 ? 's' : ''} pending` : 'All DVRs checked', r.pending ? (r.coverage >= 70 ? 'warn' : 'crit') : 'good', `<div class="mbar"><i style="width:${r.coverage}%"></i></div>`)}
-    ${tile('🖥', 'DVRs online', `${r.online}<small>/${r.audited}</small>`, r.offline ? `${r.offline} offline` : 'All online', r.offline ? 'crit' : r.audited ? 'good' : 'none')}
-    ${tile('📷', 'Cameras live', `${r.live}<small>/${r.camsAudited}</small>`, `${r.livePct}% · ${r.notLive} not live`, r.audited ? healthLevel(r.livePct) : 'none')}
-    ${tile('⏺', 'Recording', r.pbErrDvr ? `${r.pbErrCams}<small> cams</small>` : '✓', r.pbErrDvr ? `not recording at ${r.pbErrDvr} DVR${r.pbErrDvr > 1 ? 's' : ''}` : r.pbNotChecked ? `${r.pbNotChecked} DVR not verified` : 'All recording', r.pbErrDvr ? 'crit' : r.pbNotChecked ? 'warn' : r.audited ? 'good' : 'none')}
-   </div>${healthExplain(r)}</div>
+    ${heroTile('aud', '📋', 'Audited', `${r.audited}<small>/${r.totalDvr}</small>`, r.pending ? `${r.pending} DVR${r.pending > 1 ? 's' : ''} pending` : 'All DVRs checked', r.pending ? (r.coverage >= 70 ? 'warn' : 'crit') : 'good', `<div class="mbar"><i style="width:${r.coverage}%"></i></div>`)}
+    ${heroTile('dvr', '🖥', 'DVRs online', `${r.online}<small>/${r.audited}</small>`, r.offline ? `${r.offline} offline` : 'All online', r.offline ? 'crit' : r.audited ? 'good' : 'none')}
+    ${heroTile('cam', '📷', 'Cameras live', `${r.live}<small>/${r.camsAudited}</small>`, `${r.livePct}% · ${r.notLive} not live`, r.audited ? healthLevel(r.livePct) : 'none')}
+    ${heroTile('rec', '⏺', 'Recording', r.pbErrDvr ? `${r.pbErrCams}<small> cams</small>` : '✓', r.pbErrDvr ? `not recording at ${r.pbErrDvr} DVR${r.pbErrDvr > 1 ? 's' : ''}` : r.pbNotChecked ? `${r.pbNotChecked} DVR not verified` : 'All recording', r.pbErrDvr ? 'crit' : r.pbNotChecked ? 'warn' : r.audited ? 'good' : 'none')}
+   </div>
+   ${heroHealth(healthSplit(r), 'cams', `<div class="stchip st-${lvl}"><span class="dot"></span>${r.audited ? LVL_TXT[lvl] : 'No audit yet'}</div>
+    <div class="small muted" style="text-align:center">Target ${tgt}%${dh !== null ? ` · <b style="color:${dh >= 0 ? '#006300' : '#b42318'}">${dh >= 0 ? '▲' : '▼'} ${Math.abs(dh)} pts</b> vs ${esc(prev.shift)} ${esc(fmtDate(prev.date))}` : ''}</div>`, 'Every audited camera is counted once.')}
+   ${tileDetail(r, f.open)}</div>
   ${issueStory(r)}
   ${reasonCard(r, f)}
 
@@ -1070,8 +1170,8 @@ function viewDashboard() {
    ${k(live.length ? 'warn' : 'ok', 'Open exceptions', live.length, `${crit.length} critical · ${noT.length} no ticket · ${rv.length} recovered`)}
    ${k(sla.length ? 'bad' : 'ok', 'SLA breached', sla.length, 'open beyond allowed hours')}
   </div>
-  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise report</h3><span class="small muted">Latest audit per DVR${canAudit() ? ' · tap a row to audit' : ''}</span></div>
-   <div class="tbl-wrap" style="margin-top:8px">${reportTable(r)}</div></div>
+  <div class="card" style="margin-top:12px"><div class="row"><h3 class="grow" style="margin:0">Outlet-wise report</h3><span class="small muted">${f.allOut ? 'All outlets' : 'Only outlets below 100%'}${canAudit() ? ' · tap a row to audit' : ''}</span><button class="btn sm ghost" data-act="out-all">${f.allOut ? 'Only below 100%' : 'Show all'}</button></div>
+   <div class="tbl-wrap" style="margin-top:8px">${reportTable(r, !f.allOut, f.osort)}</div></div>
   <div class="two" style="margin-top:12px">
    <div class="card"><h3>Open exceptions by reason</h3>${reasonBars(live)}</div>
    <div class="card"><h3>Last 7 days — camera live % & playback errors</h3>${trendChart(f)}</div>
@@ -1081,9 +1181,11 @@ function viewDashboard() {
    <div class="card"><h3>Who audited (${esc(r.shift)})</h3>${auditorList(r)}</div>
   </div></details>`;
 }
-function reportTable(r) {
+function reportTable(r, onlyBad, sort) {
+  const hp = x => x.a ? pct(num(x.a['Healthy Cameras']), num(x.d['Cameras Installed'])) : -1, dir = sort === 'asc' ? 1 : -1;
+  const list = !onlyBad ? r.rows : r.rows.filter(x => hp(x) < 100).sort((x, y) => (!x.a - !y.a) || (hp(x) - hp(y)) * dir);
   const cols = ['Type', 'Outlet', 'DVR Code', 'DVR Serial', 'Software', 'City', 'Audited', 'DVR Online', '# Cam', 'Cam Live', 'Playback', 'Healthy', 'Issues', 'Checked by', 'Time'];
-  const body = r.rows.map(({d, a}) => {
+  const body = list.map(({d, a}) => {
     const bad = a && (a['DVR Online'] !== 'Y' || a.Playback === 'Error' || num(a['Cameras Live']) < num(a['Cameras Installed']));
     const issues = a ? [a['DVR Issue'], a['Camera Issues'], a['Playback Issue'] ? 'Playback: ' + a['Playback Issue'] + (a['Playback Cameras'] ? ' (' + (a['Playback Cameras'] === 'ALL' ? 'all cams' : 'cams ' + a['Playback Cameras']) + ')' : '') : ''].filter(Boolean).join(' · ') : '';
     return ` <tr class="${bad ? 'rowbad' : ''}" style="cursor:${canAudit() ? 'pointer' : 'default'}" data-act="row-audit" data-code="${esc(d['DVR Code'])}">
@@ -1097,7 +1199,7 @@ function reportTable(r) {
      <td class="n">${a ? num(a['Healthy Cameras']) : ''}</td>
      <td style="white-space:normal;min-width:180px">${esc(issues)}</td><td>${esc(a ? a['Auditor Name'] : '')}</td><td>${esc(a ? fmtTime(a['Submitted At']) : '')}</td></tr>`;
   }).join('');
-  return `<table><thead><tr>${cols.map(c => `<th class="${['# Cam', 'Cam Live', 'Healthy'].includes(c) ? 'n' : ''}">${c}</th>`).join('')}</tr></thead><tbody>${body}</tbody>
+  return `<table><thead><tr>${cols.map(c => `<th class="${['# Cam', 'Cam Live', 'Healthy'].includes(c) ? 'n' : ''}${onlyBad && c === 'Healthy' ? ' sortable" data-act="out-sort" title="Tap to flip the order' : ''}">${c}${onlyBad && c === 'Healthy' ? (dir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('')}</tr></thead><tbody>${body || '<tr><td colspan="15"><b style="color:var(--ok)">✔ Every outlet is at 100%.</b></td></tr>'}</tbody>
    <tfoot><tr><td colspan="6">Total — ${r.totalDvr} DVRs</td><td>${r.audited}</td><td>${r.online}</td><td class="n">${r.totalCams}</td><td class="n">${r.live}</td><td>${r.pbErrDvr} err</td><td class="n">${r.healthy}</td><td colspan="3"></td></tr></tfoot></table>`;
 }
 function reasonBars(act) {
@@ -2306,6 +2408,9 @@ const ACT = {
   go: (el, e) => { if (e && e.preventDefault && el.tagName === 'A') e.preventDefault(); closeLayer(); if (S.view === 'audit-form') saveDraft(); S.draft = null; S.view = el.dataset.v; render(); window.scrollTo(0, 0); },
   refresh: () => refresh(),
   'dash-refresh': () => { S.trend = null; refresh(); },
+  'ht-open': el => { const k = el.dataset.k; S.dash.open = S.dash.open === k ? '' : k; render(); },
+  'out-all': () => { S.dash.allOut = !S.dash.allOut; render(); },
+  'out-sort': () => { S.dash.osort = S.dash.osort === 'asc' ? 'desc' : 'asc'; render(); },
   wa: () => copyText(waSummary()).then(ok => toast(ok ? 'Summary copied — paste in WhatsApp' : 'Copy failed', !ok)),
   csv: () => csvReport(),
   'alert-go': el => {
