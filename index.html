@@ -777,7 +777,7 @@ const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 function tileDetail(r, key) {
   if (!key) return '';
   const liveE = (code, lv) => S.data.exceptions.filter(x => x['DVR Code'] === code && lv.includes(x.Level) && isLive(x)).sort(bySeen);
-  const why = (E, a, k, cams) => { let R = uniq(E.map(x => x.Reason).filter(v => v && v !== R_UNKNOWN)); if (!R.length) R = auditReasons({a, k, cams: cams || []});
+  const why = (E, a, k, cams) => { let R = uniq(E.map(x => x.Reason).filter(v => v && v !== R_UNKNOWN).map(reasonLabel)); if (!R.length) R = auditReasons({a, k, cams: cams || []});
     return R.length ? R.map(esc).join('<br>') : '<span class="muted">Not given</span>'; };
   const dur = (d, a, E) => E.length ? `<b>${esc(daysLabel(E[0]))}</b>` : fixedSince(d, a) ? '<span class="pill p-ok">Fixed after audit</span>' : '<span class="muted">New</span>';
   const A = r.rows.filter(x => x.a), COLS = ['Outlet', 'Problem', 'Reason given', 'How long'];
@@ -800,7 +800,7 @@ function tileDetail(r, key) {
 function periodDetail(A, key, sp) {
   if (!key) return '';
   const hist = (code, lv) => S.data.exceptions.filter(x => x['DVR Code'] === code && lv.includes(x.Level) && x['First Seen'] && ymd(new Date(x['First Seen'])) <= sp.to && (x.Status !== 'Resolved' || !x['Resolved At'] || ymd(new Date(x['Resolved At'])) >= sp.from));
-  const why = E => { const R = uniq(E.map(x => x.Reason && x.Reason !== R_UNKNOWN ? x.Reason : x.Issue)); return R.length ? R.slice(0, 3).map(esc).join('<br>') : '<span class="muted">Not given</span>'; };
+  const why = E => { const R = uniq(E.map(x => x.Reason && x.Reason !== R_UNKNOWN ? reasonLabel(x.Reason) : x.Issue)); return R.length ? R.slice(0, 3).map(esc).join('<br>') : '<span class="muted">Not given</span>'; };
   const now = E => { const L = E.filter(isLive).sort(bySeen); return L.length ? `<span class="pill p-bad">Still open · ${esc(daysLabel(L[0]))}</span>` : '<span class="pill p-ok">OK now</span>'; };
   const COLS = ['Outlet', 'In this period', 'Reason', 'Now'], O = A.outlets, sub = t => `<div class="small muted">${t}</div>`;
   if (key === 'aud') { const rows = O.filter(o => o.audited < A.n).sort((a, b) => a.audited - b.audited).map(o => [outletCell(o.d), `${o.audited} of ${plural(A.n, 'day')}`, `<b style="color:var(--bad)">${A.n - o.audited}</b>`]);
@@ -920,6 +920,10 @@ function auditReasons(o) {
   const labels = o.k === 'dvr' ? ['DVR'] : o.k === 'rec' ? ['Playback'] : o.cams.map(c => 'Cam ' + c);
   return uniq(labels.map(l => m[l] ? (labels.length > 1 ? l + ': ' : '') + m[l] : '').filter(Boolean));
 }
+/* A reason counts as a code only if it is on the Reasons list; anything else was typed under "Other" */
+const R_TYPED = 'Other — reason typed by auditor';
+function isReasonCode(v) { const L = S.cfg.reasons || []; return !L.length || L.some(r => r.Reason === v); }
+const reasonLabel = v => isReasonCode(v) ? v : 'Other: ' + v;
 function reasonCard(r, f) {
   const codes = new Set(r.devs.map(d => d['DVR Code'])), E = S.data.exceptions.filter(x => codes.has(x['DVR Code']));
   const open = E.filter(x => x.Status !== 'Resolved'), d = f.date;
@@ -931,7 +935,7 @@ function reasonCard(r, f) {
   const rv = open.filter(x => x.Status === 'Recovered - Verify');
   const P = [['crit', unk.length, 'Reason unknown', 'no ticket yet', 'Active'], ['serious', toRaise.length, 'Ticket to raise', 'reason known', 'NoTicket'], ['warn', withOwner.length, 'With owner', 'ticket raised / owner fixing', 'Active'], ['info', rv.length, 'Fixed — verify', 'found working', 'Recovered - Verify'], ['good', closed7.length, 'Closed', 'last 7 days', 'Resolved']];
   const tot = P.reduce((t, p) => t + p[1], 0);
-  const by = {}; open.filter(isLive).forEach(x => { const k = x.Reason && x.Reason !== R_UNKNOWN ? x.Reason : '❓ Reason not known yet'; (by[k] = by[k] || []).push(x); });
+  const by = {}; open.filter(isLive).forEach(x => { const k = !x.Reason || x.Reason === R_UNKNOWN ? '❓ Reason not known yet' : isReasonCode(x.Reason) ? x.Reason : R_TYPED; (by[k] = by[k] || []).push(x); });
   const owners = {}; open.filter(isLive).forEach(x => { const o = x.Owner || 'No owner'; owners[o] = (owners[o] || 0) + 1; });
   const what = x => x.Level === 'DVR' ? 'DVR' : x.Level === 'Camera' ? 'Cam ' + x['Camera No'] : 'Recording' + (x['Camera No'] === 'ALL' ? '' : ' Cam ' + x['Camera No']);
   if (!tot && !focToday.length) return '';
@@ -941,7 +945,7 @@ function reasonCard(r, f) {
    <div class="pipe-leg">${P.map(p => `<button class="ecs ${p[0] === 'good' ? 'ok' : p[0] === 'info' ? 'info' : p[0] === 'crit' || p[0] === 'serious' ? 'bad' : ''}" data-act="dash-exc" data-f="status:${p[4]}"><b>${p[1]}</b><span>${p[2]} <i class="muted">· ${p[3]}</i></span></button>`).join('<span class="ecs-op">→</span>')}</div>` : ''}
    ${Object.keys(owners).length ? `<div class="why-l" style="margin-top:12px">Open issues by owner</div><div class="chips own-row">${Object.entries(owners).sort((a, b) => b[1] - a[1]).map(([o, n]) => `<span class="own own-${esc(o.split(' ')[0])}" style="font-size:12px;padding:3px 9px">${esc(o)} <b>${n}</b></span>`).join('')}</div>` : ''}
    ${Object.keys(by).length ? `<div class="why-l" style="margin-top:12px">By reason</div>${Object.entries(by).sort((a, b) => b[1].length - a[1].length).map(([rs, L]) => `<details class="sg" data-sid="${esc('R:' + rs)}" ${S.storyOpen && S.storyOpen.has('R:' + rs) ? 'open' : ''}><summary data-act="story-t"><span class="pm"></span><span class="grow">${esc(rs)}</span>${uniq(L.map(x => x.Owner)).map(o => `<span class="own own-${esc(String(o).split(' ')[0])}">${esc(o)}</span>`).join(' ')}<b class="sn">${L.length}</b></summary>
-     <div class="so">${L.map(x => `<div class="sor"><span class="grow">${esc(x['Outlet Name'])} <span class="muted small">${esc(what(x))} · ${esc(x.Issue)} · ${esc(daysLabel(x))}</span></span><span class="small">${x['Ticket ID'] ? '🎫 ' + esc(x['Ticket ID']) : esc(x['Next Action'] || x.Status)}</span></div>`).join('')}<div class="sor sot"><span class="grow">Total</span><b class="sn">${L.length}</b></div></div></details>`).join('')}` : ''}
+     <div class="so">${L.map(x => `<div class="sor"><span class="grow">${esc(x['Outlet Name'])} <span class="muted small">${esc(what(x))} · ${esc(x.Issue)} · ${esc(daysLabel(x))}</span>${rs === R_TYPED ? `<div class="xwhy"><span>🗣 ${esc(x.Reason)}</span></div>` : ''}</span><span class="small">${x['Ticket ID'] ? '🎫 ' + esc(x['Ticket ID']) : esc(x['Next Action'] || x.Status)}</span></div>`).join('')}<div class="sor sot"><span class="grow">Total</span><b class="sn">${L.length}</b></div></div></details>`).join('')}` : ''}
    ${focToday.length ? `<details class="sg" data-sid="R:foc" ${S.storyOpen && S.storyOpen.has('R:foc') ? 'open' : ''}><summary data-act="story-t"><span class="pm"></span><span class="grow">☎ Fixed on call today</span><b class="sn">${focToday.length}</b></summary><div class="so">${focToday.map(x => `<div class="sor"><span class="grow">${esc(x['Outlet Name'])} <span class="muted small">${esc(what(x))} · ${esc(x.Issue)}</span></span><span class="small">${esc(x.Reason || x['Root Cause'])}</span></div>`).join('')}</div></details>` : ''}</div>`;
 }
 function storyData(r) {
