@@ -731,9 +731,20 @@ function ring(pctVal, lvl, size = 150) {
    <text x="50%" y="47%" text-anchor="middle" font-size="${size / 5}" font-weight="800" fill="#152033">${pctVal}%</text>
    <text x="50%" y="62%" text-anchor="middle" font-size="11.5" fill="#4a5a70">cameras healthy</text></svg>`;
 }
+/* The audit found a problem, but every issue of this DVR has been resolved since, and no newer audit exists yet → show the tile as fixed */
+function fixedSince(d, a) {
+  const code = d['DVR Code'], at = new Date(a['Submitted At']).getTime();
+  const bad = a['DVR Online'] !== 'Y' || a.Playback === 'Error' || num(a['Cameras Live']) < num(a['Cameras Installed']);
+  if (!bad || !at) return false;
+  if (S.data.audits.some(x => x['DVR Code'] === code && new Date(x['Submitted At']).getTime() > at)) return false;   // a later audit decides, not this one
+  const E = S.data.exceptions.filter(x => x['DVR Code'] === code);
+  if (E.some(isLive)) return false;                                                                                  // something is still broken
+  return E.some(x => x['Resolved At'] && new Date(x['Resolved At']).getTime() > at);
+}
 function dvrState(d, a, liveExc) {
   const crit = liveExc.some(x => x['DVR Code'] === d['DVR Code'] && x.Severity === 'Critical');
   if (!a) return {s: 'none', icon: '…', label: 'Not audited'};
+  if (fixedSince(d, a)) return {s: 'good', icon: '✓', label: 'Fixed after audit'};
   if (a['DVR Online'] !== 'Y') return {s: 'crit', icon: '✕', label: 'DVR offline'};
   if (a.Playback === 'Error' && a['Playback Cameras'] === 'ALL') return {s: 'crit', icon: '⏺', label: 'Not recording'};
   const inst = num(a['Cameras Installed']), lv = num(a['Cameras Live']);
